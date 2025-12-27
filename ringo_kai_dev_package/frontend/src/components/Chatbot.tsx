@@ -45,6 +45,8 @@ export function Chatbot() {
   const [error, setError] = useState<string | null>(null);
 
   const currentStatus = user?.status ?? "guest";
+  const backendBase = (process.env.NEXT_PUBLIC_BACKEND_URL ?? "").replace(/\/$/, "");
+  const chatbotEndpoint = backendBase ? `${backendBase}/api/chatbot` : "/api/chatbot";
 
   const greeting = useMemo(() => initialPromptByStatus[currentStatus] ?? initialPromptByStatus.guest, [currentStatus]);
 
@@ -76,11 +78,16 @@ export function Chatbot() {
 
     try {
       setSending(true);
-      const res = await fetch("/api/chatbot", {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (user?.id) {
+        headers["X-User-Id"] = user.id;
+      }
+
+      const res = await fetch(chatbotEndpoint, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
         body: JSON.stringify({
           message: text,
           status: currentStatus,

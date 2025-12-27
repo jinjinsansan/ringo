@@ -1,12 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
 
 import { UserFlowGuard } from "@/components/UserFlowGuard";
-import { createSupabaseClient } from "@/lib/supabase/client";
-import { updateUserStatus } from "@/lib/status";
+import { authorizedFetch } from "@/lib/status";
 import { useUser } from "@/lib/user";
+import type { ApiError } from "@/lib/status";
 
 type WishlistAssignment = {
   alias: string;
@@ -15,66 +15,92 @@ type WishlistAssignment = {
   link: string;
 };
 
-const mockAssignments: WishlistAssignment[] = [
-  {
-    alias: "りんごネーム #832",
-    itemName: "ローズゴールド マグカップ",
-    price: 3200,
-    link: "https://amazon.jp/hz/wishlist/xxx",
-  },
-  {
-    alias: "スターりんご #124",
-    itemName: "ふわもこタオルセット",
-    price: 3600,
-    link: "https://amazon.jp/hz/wishlist/yyy",
-  },
-];
+type PurchaseAssignment = WishlistAssignment & {
+  purchaseId: number;
+};
 
 export default function PurchasePage() {
-  const router = useRouter();
-  const supabase = useMemo(() => createSupabaseClient(), []);
   const { user, refresh } = useUser();
-  const [assignment, setAssignment] = useState<WishlistAssignment | null>(null);
+  const [assignment, setAssignment] = useState<PurchaseAssignment | null>(null);
   const [isUpdating, setUpdating] = useState(false);
+  const [isLoadingAssignment, setLoadingAssignment] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const hydrateAssignment = useCallback(async () => {
+    if (!user) {
+      setAssignment(null);
+      return;
+    }
+
+    setLoadingAssignment(true);
+    setError(null);
+    try {
+      const response = await authorizedFetch("/api/purchase/current", user.id);
+      const data = (await response.json()) as {
+        purchase_id: number;
+        alias: string;
+        item_name: string;
+        price: number;
+        wishlist_url: string;
+      };
+      setAssignment({
+        purchaseId: data.purchase_id,
+        alias: data.alias,
+        itemName: data.item_name,
+        price: data.price,
+        link: data.wishlist_url,
+      });
+    } catch (err) {
+      const apiErr = err as ApiError;
+      if (apiErr?.status === 404) {
+        setAssignment(null);
+      } else {
+        console.error(err);
+        setError(apiErr?.message ?? "割り当て取得に失敗しました。");
+      }
+    } finally {
+      setLoadingAssignment(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    hydrateAssignment();
+  }, [hydrateAssignment]);
 
   const requestAssignment = async () => {
     if (!user) {
       setError("ユーザー情報が見つかりません。ログインし直してください。");
       return;
     }
-
-    setAssignment(mockAssignments[Math.floor(Math.random() * mockAssignments.length)]);
-    try {
-      setUpdating(true);
-      setError(null);
-      const { error: updateError } = await updateUserStatus(supabase, user.id, "ready_to_purchase");
-      if (updateError) throw updateError;
-      await refresh();
-    } catch (err) {
-      console.error(err);
-      setError("ステータス更新に失敗しました。時間を置いて再度お試しください。");
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  const markScreenshotSubmitted = async () => {
-    if (!user) {
-      setError("ユーザー情報が見つかりません。ログインし直してください。");
+    if (assignment) {
+      setError("既に購入対象が割り当て済みです。スクリーンショット提出へ進んでください。");
       return;
     }
 
     try {
       setUpdating(true);
       setError(null);
-      const { error: updateError } = await updateUserStatus(supabase, user.id, "verifying");
-      if (updateError) throw updateError;
+      const response = await authorizedFetch("/api/purchase/start", user.id, {
+        method: "POST",
+      });
+      const data = (await response.json()) as {
+        purchase_id: number;
+        alias: string;
+        item_name: string;
+        price: number;
+        wishlist_url: string;
+      };
+      setAssignment({
+        purchaseId: data.purchase_id,
+        alias: data.alias,
+        itemName: data.item_name,
+        price: data.price,
+        link: data.wishlist_url,
+      });
       await refresh();
-      router.push("/verification-pending");
     } catch (err) {
       console.error(err);
-      setError("スクリーンショット提出後の処理に失敗しました。");
+      setError(err instanceof Error ? err.message : "割り当て取得に失敗しました。");
     } finally {
       setUpdating(false);
     }
@@ -119,10 +145,24 @@ export default function PurchasePage() {
               type="button"
               onClick={requestAssignment}
               className="mt-6 w-full rounded-ringo-pill border border-ringo-pink py-3 text-lg font-semibold text-ringo-pink transition hover:bg-ringo-pink/10 disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={isUpdating}
+              disabled={isUpdating || isLoadingAssignment || Boolean(assignment)}
             >
-              {isUpdating ? "割り当て中..." : "購入対象を取得"}
+              {isLoadingAssignment
+                ? "読み込み中..."
+                : assignment
+                  ? "購入対象は割り当て済み"
+                  : isUpdating
+                    ? "割り当て中..."
+                    : "購入対象を取得"}
             </button>
+            {assignment && (
+              <Link
+                href="/upload-screenshot"
+                className="mt-4 block rounded-ringo-pill bg-ringo-pink py-3 text-center text-lg font-semibold text-white shadow-lg shadow-ringo-pink/40 transition hover:-translate-y-0.5"
+              >
+                スクリーンショット提出ページへ進む
+              </Link>
+            )}
           </div>
 
           <div className="rounded-3xl border border-ringo-purple/20 bg-white/80 p-6 shadow-ringo-card text-sm">
@@ -132,15 +172,7 @@ export default function PurchasePage() {
               <li>PNG または JPG / 10MB 以下。</li>
               <li>提出後は AI + 管理者が確認するまでお待ちください。</li>
             </ul>
-            <p className="mt-4 text-xs text-ringo-ink/70">実際のアップロードは後続バージョンで実装します。今はモックボタンで進行を確認します。</p>
-            <button
-              type="button"
-              onClick={markScreenshotSubmitted}
-              className="mt-6 w-full rounded-ringo-pill bg-ringo-pink py-3 text-lg font-semibold text-white shadow-lg shadow-ringo-pink/40 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={isUpdating || !assignment}
-            >
-              {isUpdating ? "送信中..." : "スクショを提出した"}
-            </button>
+            <p className="mt-4 text-xs text-ringo-ink/70">購入後は「スクリーンショット提出ページへ進む」ボタンから画像をアップロードしてください。</p>
           </div>
         </section>
 

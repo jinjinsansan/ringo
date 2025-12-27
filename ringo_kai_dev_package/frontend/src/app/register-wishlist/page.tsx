@@ -1,27 +1,29 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { UserFlowGuard } from "@/components/UserFlowGuard";
-import { createSupabaseClient } from "@/lib/supabase/client";
-import { updateUserStatus } from "@/lib/status";
+import { authorizedFetch } from "@/lib/status";
 import { useUser } from "@/lib/user";
 
 const validateAmazonUrl = (url: string) => /amazon\.(co\.jp|com)/i.test(url);
 
 export default function RegisterWishlistPage() {
   const router = useRouter();
-  const supabase = useMemo(() => createSupabaseClient(), []);
   const { user, refresh } = useUser();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setSubmitting] = useState(false);
+  const [detectedTitle, setDetectedTitle] = useState<string | null>(null);
+  const [detectedPrice, setDetectedPrice] = useState<number | null>(null);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
     setSuccess(null);
+    setDetectedTitle(null);
+    setDetectedPrice(null);
 
     const formData = new FormData(event.currentTarget);
     const url = (formData.get("url") as string)?.trim();
@@ -38,17 +40,22 @@ export default function RegisterWishlistPage() {
 
     try {
       setSubmitting(true);
-      const { error: updateError } = await updateUserStatus(supabase, user.id, "ready_to_draw", {
-        wishlist_url: url,
-        wishlist_registered_at: new Date().toISOString(),
+      const response = await authorizedFetch("/api/wishlist/register", user.id, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ url }),
       });
-      if (updateError) throw updateError;
+      const data = (await response.json()) as { title?: string; price?: number };
+      setDetectedTitle(data.title ?? null);
+      setDetectedPrice(typeof data.price === "number" ? data.price : null);
       await refresh();
       setSuccess("登録しました！ りんご抽選ページへ移動します。");
       setTimeout(() => router.push("/draw"), 1500);
     } catch (err) {
       console.error(err);
-      setError("リスト登録処理に失敗しました。");
+      setError(err instanceof Error ? err.message : "リスト登録処理に失敗しました。");
     } finally {
       setSubmitting(false);
     }
@@ -90,7 +97,21 @@ export default function RegisterWishlistPage() {
         </form>
 
         {error && <p className="text-sm text-ringo-red">{error}</p>}
-        {success && <p className="text-sm text-ringo-gold">{success}</p>}
+        {success && (
+          <div className="space-y-2 rounded-3xl border border-ringo-green/40 bg-ringo-green/10 p-4 text-sm text-ringo-green">
+            <p>{success}</p>
+            {detectedTitle && (
+              <p>
+                検出された商品: <span className="font-semibold">{detectedTitle}</span>
+              </p>
+            )}
+            {detectedPrice && (
+              <p>
+                推定価格: <span className="font-semibold">¥{detectedPrice.toLocaleString()}</span>
+              </p>
+            )}
+          </div>
+        )}
       </main>
     </UserFlowGuard>
   );

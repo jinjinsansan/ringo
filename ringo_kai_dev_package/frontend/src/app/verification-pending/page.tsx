@@ -1,16 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { UserFlowGuard } from "@/components/UserFlowGuard";
-import { createSupabaseClient } from "@/lib/supabase/client";
 import { updateUserStatus } from "@/lib/status";
 import { useUser } from "@/lib/user";
 
 export default function VerificationPendingPage() {
   const router = useRouter();
-  const supabase = useMemo(() => createSupabaseClient(), []);
   const { user, refresh } = useUser();
   const [isUpdating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +21,7 @@ export default function VerificationPendingPage() {
     try {
       setUpdating(true);
       setError(null);
-      const { error: updateError } = await updateUserStatus(supabase, user.id, "first_purchase_completed");
+      const { error: updateError } = await updateUserStatus(user.id, "first_purchase_completed");
       if (updateError) throw updateError;
       await refresh();
       router.push("/register-wishlist");

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
 
 import { createSupabaseClient } from "@/lib/supabase/client";
@@ -17,11 +17,13 @@ const defaultErrors: FormErrors = {};
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = useMemo(() => createSupabaseClient(), []);
   const [isSubmitting, setSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<FormErrors>(defaultErrors);
   const [serverError, setServerError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const referralCode = searchParams.get("ref")?.trim().toUpperCase() ?? "";
 
   const validate = (email: string, password: string, confirmPassword: string, agreed: boolean) => {
     const errors: FormErrors = {};
@@ -99,6 +101,25 @@ export default function RegisterPage() {
       if (profileError) {
         setServerError("ユーザープロフィールの作成に失敗しました: " + profileError.message);
         return;
+      }
+
+      if (referralCode) {
+        try {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "") ?? ""}/api/referral/claim`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-User-Id": data.user.id,
+            },
+            body: JSON.stringify({ code: referralCode }),
+          });
+          if (!response.ok) {
+            const payload = await response.json().catch(() => null);
+            console.warn("referral claim failed", payload?.detail ?? response.statusText);
+          }
+        } catch (err) {
+          console.warn("referral claim error", err);
+        }
       }
     }
 
