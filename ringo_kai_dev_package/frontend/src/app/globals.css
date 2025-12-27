@@ -22,6 +22,34 @@ a {
 
 @layer components {
   .btn-primary {
-    @apply rounded-ringo-pill bg-ringo-rose py-3 text-lg font-semibold text-white shadow-lg shadow-ringo-red/30 transition hover:-translate-y-0.5 hover:bg-[#d83670] focus:outline-none focus:ring-4 focus:ring-ringo-pink/40 disabled:cursor-not-allowed disabled:opacity-60;
+    border-radius: 1.5rem;
+    background-color: #ff4b8f;
+    padding: 0.75rem 1.5rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #fff;
+    box-shadow: 0 15px 30px rgba(230, 57, 70, 0.3);
+    transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    background-color: #d83670;
+    box-shadow: 0 20px 32px rgba(230, 57, 70, 0.35);
+  }
+
+  .btn-primary:focus {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(255, 182, 217, 0.4);
+  }
+
+  .btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 0 10px 20px rgba(230, 57, 70, 0.2);
   }
 }
