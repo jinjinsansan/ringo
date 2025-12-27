@@ -83,6 +83,7 @@ RTP_CACHE_TTL_SECONDS = 300
 _rtp_cache: dict[str, float | datetime] | None = None
 
 api = FastAPI(title="Ringo Kai API", version="0.2.0")
+app = api
 
 frontend_origins = [origin.strip() for origin in os.environ.get("FRONTEND_ORIGINS", "http://localhost:3000").split(",") if origin.strip()]
 
