@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { UserFlowGuard } from "@/components/UserFlowGuard";
+import { FlowLayout } from "@/components/FlowLayout";
 import { authorizedFetch } from "@/lib/status";
 import { useUser } from "@/lib/user";
 
@@ -23,18 +24,12 @@ type ReferralSummary = {
 };
 
 const hurdleDescriptions: Record<number, string> = {
-  3: "初級：まずは身近な友達にシェア",
-  5: "中級：SNSでの発信に挑戦",
-  10: "上級：りんご会♪アンバサダー候補",
-  20: "達人：コミュニティのスター",
-  30: "伝説：VIPプログラム招待",
+  3: "初級：まずは身近な友達にシェア！",
+  5: "中級：SNSでの発信に挑戦しよう",
+  10: "上級：りんご会♪のアンバサダーかも？",
+  20: "達人：コミュニティのスターです✨",
+  30: "伝説：VIPプログラムへご招待！？",
 };
-
-const referralTips = [
-  "りんご会♪の魅力を一言で添えてシェア",
-  "Instagramストーリーに紹介コードのスクショを載せる",
-  "オフラインではQRコードを見せてその場で参加を促す",
-];
 
 export default function FriendsPage() {
   const { user } = useUser();
@@ -74,10 +69,10 @@ export default function FriendsPage() {
     if (!summary) return;
     try {
       await navigator.clipboard.writeText(referralLink || summary.referral_code);
-      setClaimMessage({ type: "success", text: "紹介リンクをコピーしました！" });
+      setClaimMessage({ type: "success", text: "リンクをコピーしました！" });
     } catch (err) {
       console.error(err);
-      setClaimMessage({ type: "error", text: "コピーに失敗しました。手動で選択してください。" });
+      setClaimMessage({ type: "error", text: "コピーに失敗しました。" });
     }
   };
 
@@ -85,7 +80,7 @@ export default function FriendsPage() {
     event.preventDefault();
     if (!user || !summary) return;
     if (!summary.can_claim_code) {
-      setClaimMessage({ type: "error", text: "紹介コードはすでに登録済みです。" });
+      setClaimMessage({ type: "error", text: "紹介コードは登録済みです。" });
       return;
     }
     if (!claimCode.trim()) {
@@ -109,162 +104,141 @@ export default function FriendsPage() {
     }
   };
 
-  const content = () => {
-    if (isLoading) {
-      return <p className="text-sm text-ringo-ink/70">紹介状況を読み込み中です…</p>;
-    }
-
-    if (error) {
-      return <p className="text-sm text-ringo-red">{error}</p>;
-    }
-
-    if (!summary) {
-      return <p className="text-sm text-ringo-ink/70">紹介データが見つかりませんでした。</p>;
-    }
-
-    const nextThresholdLabel = summary.next_threshold ? `${summary.next_threshold}人` : "全ハードル制覇";
-
-    return (
-      <div className="space-y-8">
-        <section className="grid gap-6 md:grid-cols-2">
-          <div className="rounded-3xl border border-ringo-purple/20 bg-ringo-slate-light/40 p-6 shadow-ringo-card">
-            <h2 className="text-xl font-semibold text-ringo-red">📊 あなたの紹介状況</h2>
-            <p className="mt-2 text-sm text-ringo-ink/70">友達を招待して、上位りんごの確率をブーストしましょう。</p>
-            <dl className="mt-6 space-y-3 text-sm">
-              <div className="flex justify-between">
-                <dt className="text-ringo-ink/70">紹介人数</dt>
-                <dd className="font-semibold text-ringo-ink">{summary.referral_count}人</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-ringo-ink/70">次のハードル</dt>
-                <dd className="font-semibold text-ringo-ink">{nextThresholdLabel}</dd>
-              </div>
-            </dl>
-            <div className="mt-6">
-              <div className="flex items-center justify-between text-xs text-ringo-ink/70">
-                <span>進捗</span>
-                <span>{summary.progress_percent}%</span>
-              </div>
-              <div className="mt-2 h-3 w-full rounded-full bg-white/70">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-ringo-purple to-ringo-pink"
-                  style={{ width: `${summary.progress_percent}%` }}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-3xl border border-ringo-purple/20 bg-white/80 p-6 shadow-ringo-card">
-            <h2 className="text-xl font-semibold text-ringo-red">🎯 ハードル一覧</h2>
-            <ul className="mt-4 space-y-3 text-sm">
-              {summary.thresholds.map((threshold) => {
-                const description = hurdleDescriptions[threshold.count];
-                const statusIcon = threshold.status === "completed" ? "✅" : threshold.status === "active" ? "⏳" : "⭕";
-                const statusColor =
-                  threshold.status === "completed"
-                    ? "text-ringo-green"
-                    : threshold.status === "active"
-                      ? "text-ringo-pink"
-                      : "text-ringo-ink/50";
-                return (
-                  <li key={threshold.count} className={`flex items-start gap-3 rounded-2xl border border-ringo-purple/10 bg-ringo-bg/70 p-3 ${statusColor}`}>
-                    <span>{statusIcon}</span>
-                    <div className="text-ringo-ink">
-                      <p className="font-semibold text-ringo-ink">{threshold.count}人紹介</p>
-                      {description && <p className="text-xs text-ringo-ink/70">{description}</p>}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        </section>
-
-        <section className="grid gap-6 md:grid-cols-2">
-          <div className="rounded-3xl border border-ringo-gold/20 bg-ringo-beige/40 p-6 shadow-ringo-card">
-            <h2 className="text-xl font-semibold text-ringo-red">🔗 紹介リンク</h2>
-            <p className="mt-2 text-sm text-ringo-ink/70">このコードを共有すると、友達が登録時にあなたを選べます。</p>
-            <div className="mt-4 rounded-2xl bg-white/80 p-4 text-center">
-              <p className="text-sm font-semibold text-ringo-ink/70">紹介コード</p>
-              <p className="text-2xl font-bold text-ringo-red">{summary.referral_code}</p>
-            </div>
-            <div className="mt-4 space-y-3 text-sm">
-              <button type="button" onClick={handleCopy} className="btn-primary w-full text-base">
-                コピーして共有する
-              </button>
-              <p className="text-center text-xs text-ringo-ink/70 break-words">{referralLink}</p>
-            </div>
-          </div>
-
-          <div className="rounded-3xl border border-ringo-purple/20 bg-white/80 p-6 shadow-ringo-card">
-            <h2 className="text-xl font-semibold text-ringo-red">🤝 紹介コードを登録</h2>
-            <p className="mt-2 text-sm text-ringo-ink/70">まだ紹介してくれた友達がいる場合は、ここでコードを登録しましょう。</p>
-            <form onSubmit={handleClaim} className="mt-4 space-y-3">
-              <input
-                type="text"
-                value={claimCode}
-                onChange={(event) => setClaimCode(event.target.value.toUpperCase())}
-                placeholder="例: ABCD1234"
-                disabled={!summary.can_claim_code}
-                className="w-full rounded-2xl border border-ringo-purple/30 bg-ringo-bg/40 px-4 py-3 text-sm outline-none focus:border-ringo-pink focus:ring-2 focus:ring-ringo-pink/30 disabled:cursor-not-allowed disabled:opacity-60"
-              />
-              <button
-                type="submit"
-                disabled={!summary.can_claim_code}
-                className="w-full rounded-ringo-pill border border-ringo-pink py-3 text-sm font-semibold text-ringo-pink transition hover:bg-ringo-pink/10 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {summary.can_claim_code ? "紹介コードを登録" : "紹介コード済み"}
-              </button>
-            </form>
-            {summary.referred_by && <p className="mt-3 text-xs text-ringo-ink/70">登録済みの紹介者: {summary.referred_by}</p>}
-          </div>
-        </section>
-
-        <section className="rounded-3xl border border-ringo-purple/20 bg-ringo-slate-light/40 p-6 shadow-ringo-card">
-          <h2 className="text-xl font-semibold text-ringo-red">💡 紹介のコツ</h2>
-          <ul className="mt-4 list-disc space-y-2 pl-6 text-sm text-ringo-ink/80">
-            {referralTips.map((tip) => (
-              <li key={tip}>{tip}</li>
-            ))}
-          </ul>
-        </section>
-      </div>
-    );
-  };
-
   return (
     <UserFlowGuard requiredStatus="verifying">
-      <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-8 px-4 py-10 text-ringo-ink">
-        <header className="space-y-3 text-center">
-          <p className="text-sm font-semibold text-ringo-red">STEP.13</p>
-          <h1 className="font-logo text-4xl font-bold">友達紹介精度</h1>
-          <p className="text-sm text-ringo-ink/70">紹介人数に応じて、シルバー以上のりんごが出る確率がアップします。仲間を増やしてワクワクを共有しましょう。</p>
-        </header>
+      <FlowLayout 
+        currentStepIndex={5} 
+        title="お友達招待" 
+        subtitle="友達と一緒に楽しんで、レアりんご確率UP！"
+        showBack
+      >
+        <div className="space-y-6">
+           {claimMessage && (
+            <div
+              className={`rounded-2xl border px-4 py-3 text-sm text-center font-bold ${
+                claimMessage.type === "success"
+                  ? "border-ringo-green bg-ringo-green/10 text-ringo-green"
+                  : "border-ringo-red bg-ringo-red/10 text-ringo-red"
+              }`}
+            >
+              {claimMessage.text}
+            </div>
+          )}
 
-        {claimMessage && (
-          <p
-            className={`rounded-3xl border px-4 py-3 text-sm ${
-              claimMessage.type === "success"
-                ? "border-ringo-green/40 bg-ringo-green/10 text-ringo-green"
-                : "border-ringo-red/40 bg-ringo-pink/10 text-ringo-red"
-            }`}
-          >
-            {claimMessage.text}
-          </p>
-        )}
+          {isLoading ? (
+             <div className="text-center py-10 text-gray-400">読み込み中...</div>
+          ) : error ? (
+             <div className="text-center py-10 text-ringo-red">{error}</div>
+          ) : summary ? (
+             <>
+               {/* Stats Card */}
+               <section className="bg-gradient-to-br from-ringo-rose to-ringo-pink text-white rounded-[2rem] p-6 shadow-ringo-card text-center relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/20 rounded-full blur-2xl translate-x-1/2 -translate-y-1/2"></div>
+                  
+                  <div className="relative z-10">
+                     <p className="text-sm font-bold opacity-90 mb-2">現在の紹介人数</p>
+                     <div className="text-5xl font-bold mb-4">
+                       {summary.referral_count} <span className="text-lg">人</span>
+                     </div>
+                     
+                     <div className="bg-white/20 rounded-full h-4 w-full max-w-xs mx-auto mb-2 overflow-hidden backdrop-blur-sm">
+                       <div 
+                         className="bg-white h-full rounded-full transition-all duration-1000 ease-out"
+                         style={{ width: `${summary.progress_percent}%` }}
+                       ></div>
+                     </div>
+                     <p className="text-xs font-bold">
+                       次のレベルまで あと {summary.next_threshold ? summary.next_threshold - summary.referral_count : 0} 人！
+                     </p>
+                  </div>
+               </section>
 
-        {content()}
+               {/* Share Link */}
+               <section className="bg-white/80 rounded-[2rem] p-6 shadow-ringo-card border border-white">
+                  <h2 className="text-lg font-bold text-ringo-rose mb-4 text-center">
+                    💌 あなたの紹介リンク
+                  </h2>
+                  <div className="bg-ringo-bg p-4 rounded-xl text-center mb-4 border border-ringo-pink-soft break-all font-mono text-sm text-gray-600">
+                    {referralLink}
+                  </div>
+                  <button onClick={handleCopy} className="btn-primary w-full shadow-lg">
+                    リンクをコピーする
+                  </button>
+                  <p className="text-center text-xs text-gray-400 mt-2">
+                    ※ 登録時にこのコードが自動で入力されます
+                  </p>
+               </section>
 
-        <div className="rounded-3xl border border-ringo-purple/20 bg-white/80 p-6 text-sm shadow-ringo-card">
-          <p>
-            まだ最初の紹介が済んでいない場合は、
-            <Link href="/draw" className="text-ringo-pink underline">
-              りんご抽選ページ
-            </Link>
-            から抽選権を集め、紹介コードと合わせてシェアしてみましょう。
-          </p>
+               {/* Claim Code */}
+               <section className="bg-white/80 rounded-[2rem] p-6 shadow-ringo-card border border-white">
+                  <h2 className="text-lg font-bold text-ringo-poison mb-4 text-center">
+                    🤝 紹介された方へ
+                  </h2>
+                  {summary.referred_by ? (
+                    <div className="text-center bg-ringo-purple/10 p-4 rounded-xl text-ringo-poison font-bold">
+                      <p>あなたは {summary.referred_by} さんから紹介されました ✨</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-xs text-gray-500 text-center">
+                        紹介コードをお持ちの場合は、ここに入力してください。
+                      </p>
+                      <form onSubmit={handleClaim} className="flex gap-2">
+                         <input 
+                           type="text" 
+                           value={claimCode}
+                           onChange={(e) => setClaimCode(e.target.value.toUpperCase())}
+                           placeholder="コード (例: ABC12)"
+                           className="flex-1 rounded-full border border-ringo-pink-soft px-4 py-2 text-center outline-none focus:border-ringo-poison transition-colors"
+                         />
+                         <button 
+                           type="submit" 
+                           className="btn-secondary py-2 px-4 text-sm whitespace-nowrap"
+                           disabled={!summary.can_claim_code}
+                         >
+                           登録
+                         </button>
+                      </form>
+                    </div>
+                  )}
+               </section>
+
+               {/* Hurdles */}
+               <section className="space-y-3">
+                  <h2 className="text-center font-bold text-gray-400 text-sm">🏆 ランクアップ特典</h2>
+                  {summary.thresholds.map((t) => (
+                    <div 
+                      key={t.count} 
+                      className={`flex items-center gap-4 p-4 rounded-2xl border ${
+                        t.status === 'completed' 
+                          ? 'bg-white border-ringo-gold shadow-sm' 
+                          : t.status === 'active' 
+                            ? 'bg-white border-ringo-pink shadow-md transform scale-105' 
+                            : 'bg-gray-50 border-gray-100 opacity-60'
+                      }`}
+                    >
+                      <div className={`
+                        w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg
+                        ${t.status === 'completed' ? 'bg-ringo-gold text-white' : 'bg-gray-200 text-gray-400'}
+                      `}>
+                        {t.count}
+                      </div>
+                      <div className="flex-1">
+                        <p className={`font-bold text-sm ${t.status === 'active' ? 'text-ringo-rose' : 'text-gray-600'}`}>
+                          {t.count}人紹介
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {hurdleDescriptions[t.count]}
+                        </p>
+                      </div>
+                      {t.status === 'completed' && <span className="text-xl">✅</span>}
+                    </div>
+                  ))}
+               </section>
+             </>
+          ) : null}
         </div>
-      </main>
+      </FlowLayout>
     </UserFlowGuard>
   );
 }

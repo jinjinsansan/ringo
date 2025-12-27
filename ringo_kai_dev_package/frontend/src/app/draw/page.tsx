@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AppleReveal, AppleType } from "@/components/AppleReveal";
 import { UserFlowGuard } from "@/components/UserFlowGuard";
+import { FlowLayout } from "@/components/FlowLayout";
 import { useUser } from "@/lib/user";
 
 type AppleStatus = "pending" | "revealed";
@@ -56,34 +57,13 @@ type ProbabilityResponse = {
   meta: ProbabilityMeta;
 };
 
-const probabilityOrder: { key: AppleType; label: string }[] = [
-  { key: "bronze", label: "ブロンズ" },
-  { key: "silver", label: "シルバー" },
-  { key: "gold", label: "ゴールド" },
-  { key: "red", label: "赤いりんご" },
-  { key: "poison", label: "毒りんご" },
+const probabilityOrder: { key: AppleType; label: string; color: string }[] = [
+  { key: "bronze", label: "ブロンズ", color: "bg-amber-600" },
+  { key: "silver", label: "シルバー", color: "bg-gray-400" },
+  { key: "gold", label: "ゴールド", color: "bg-yellow-400" },
+  { key: "red", label: "赤りんご", color: "bg-red-500" },
+  { key: "poison", label: "毒りんご", color: "bg-purple-600" },
 ];
-
-const defaultProbabilities = [
-  { label: "ブロンズ", value: "55%" },
-  { label: "シルバー", value: "25%" },
-  { label: "ゴールド", value: "12%" },
-  { label: "赤いりんご", value: "5%" },
-  { label: "毒りんご", value: "3%" },
-];
-
-const mockApple = (): AppleRevealResponse => {
-  const now = Date.now();
-  const in24h = now + 24 * 60 * 60 * 1000;
-  const appleTypes: AppleType[] = ["bronze", "silver", "gold", "red", "poison"];
-  return {
-    id: "preview",
-    appleType: appleTypes[Math.floor(Math.random() * appleTypes.length)],
-    drawTime: new Date(now).toISOString(),
-    revealTime: new Date(in24h).toISOString(),
-    status: "pending",
-  };
-};
 
 export default function DrawPage() {
   const { user } = useUser();
@@ -94,7 +74,7 @@ export default function DrawPage() {
   const [isResultLoading, setResultLoading] = useState(false);
   const [consumeMessage, setConsumeMessage] = useState<string | null>(null);
   const [probabilityInfo, setProbabilityInfo] = useState<ProbabilityResponse | null>(null);
-  const [probabilityError, setProbabilityError] = useState<string | null>(null);
+  const [showTechInfo, setShowTechInfo] = useState(false);
 
   const apiBase = useMemo(() => process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "") ?? "", []);
 
@@ -120,13 +100,12 @@ export default function DrawPage() {
           "X-User-Id": user.id,
         },
       });
-      if (!res.ok) throw new Error("確率情報を取得できませんでした");
-      const data = (await res.json()) as ProbabilityResponse;
-      setProbabilityInfo(data);
-      setProbabilityError(null);
+      if (res.ok) {
+        const data = (await res.json()) as ProbabilityResponse;
+        setProbabilityInfo(data);
+      }
     } catch (err) {
       console.error(err);
-      setProbabilityError("確率情報の取得に失敗しました");
     }
   }, [buildUrl, user]);
 
@@ -142,12 +121,12 @@ export default function DrawPage() {
             "X-User-Id": user.id,
           },
         });
-        if (!res.ok) throw new Error("りんごの結果を取得できませんでした");
-        const data = (await res.json()) as AppleResult;
-        setAppleResult(data);
+        if (res.ok) {
+          const data = (await res.json()) as AppleResult;
+          setAppleResult(data);
+        }
       } catch (err) {
         console.warn("apple result fetch failed", err);
-        setAppleResult(null);
       } finally {
         setResultLoading(false);
       }
@@ -166,19 +145,18 @@ export default function DrawPage() {
           "X-User-Id": user.id,
         },
       });
-      if (!res.ok) throw new Error("現在のりんご情報を取得できませんでした");
-      const data = (await res.json()) as AppleApiResponse | null;
-      const mapped = data ? mapApple(data) : null;
-      setCurrentApple(mapped);
-      if (mapped) {
-        fetchResult(mapped.id);
-      } else {
-        setAppleResult(null);
+      if (res.ok) {
+        const data = (await res.json()) as AppleApiResponse | null;
+        const mapped = data ? mapApple(data) : null;
+        setCurrentApple(mapped);
+        if (mapped) {
+          fetchResult(mapped.id);
+        } else {
+          setAppleResult(null);
+        }
       }
     } catch (err) {
-      console.warn("apple fetch failed, fallback to mock", err);
-      setCurrentApple(null);
-      setAppleResult(null);
+      console.warn("apple fetch failed", err);
     } finally {
       setLoading(false);
     }
@@ -186,15 +164,12 @@ export default function DrawPage() {
 
   useEffect(() => {
     fetchCurrentApple();
-  }, [fetchCurrentApple]);
-
-  useEffect(() => {
     fetchProbabilities();
-  }, [fetchProbabilities]);
+  }, [fetchCurrentApple, fetchProbabilities]);
 
   const handleDraw = async () => {
     if (!user) {
-      setError("ユーザー情報が確認できません。ログイン状態を確認してください。");
+      setError("ログイン状態を確認してください。");
       return;
     }
     setLoading(true);
@@ -216,9 +191,7 @@ export default function DrawPage() {
       fetchProbabilities();
     } catch (err) {
       console.error(err);
-      setError("APIと接続できなかったため、プレビュー用のモックを表示します。");
-      setCurrentApple(mockApple());
-      setAppleResult(null);
+      setError("抽選できませんでした。時間を置いて再度お試しください。");
     } finally {
       setLoading(false);
     }
@@ -241,7 +214,7 @@ export default function DrawPage() {
       });
       if (!res.ok) throw new Error("チケットを使用できませんでした");
       const data = (await res.json()) as { purchase_available: number };
-      setConsumeMessage("購入免除チケットを1枚使用しました。");
+      setConsumeMessage("購入免除チケットを1枚使用しました！次回の購入義務が免除されます✨");
       setAppleResult((prev) => (prev ? { ...prev, purchase_available: data.purchase_available } : prev));
     } catch (err) {
       console.error(err);
@@ -251,173 +224,161 @@ export default function DrawPage() {
 
   return (
     <UserFlowGuard requiredStatus="ready_to_draw">
-      <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-8 px-4 py-10 text-ringo-ink md:px-8">
-        <header className="space-y-3">
-          <p className="text-sm font-semibold text-ringo-red">STEP.09</p>
-          <h1 className="font-logo text-4xl font-bold">りんごを引く</h1>
-          <p className="text-sm text-ringo-ink/70">
-            24時間後に結果が分かるスリル満点のりんご抽選。友達紹介や動的RTPによって勝率が変動します。
-          </p>
-        </header>
+      <FlowLayout 
+        currentStepIndex={5} 
+        title="りんごを引く" 
+        subtitle="運命の瞬間！どんなりんごが出るかな？"
+      >
+        <div className="space-y-8">
+          {/* Main Draw Area */}
+          <section className="bg-white/80 rounded-[2.5rem] p-8 shadow-ringo-card border border-white text-center relative overflow-hidden">
+             {/* Decor */}
+             <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-ringo-pink to-ringo-red"></div>
+             
+             {currentApple ? (
+               <div className="py-4">
+                 <h2 className="text-xl font-bold text-ringo-rose mb-6">
+                   あなたのりんごが育っています...🌱
+                 </h2>
+                 <div className="mx-auto mb-8">
+                   <AppleReveal
+                      appleType={currentApple.appleType}
+                      drawTime={currentApple.drawTime}
+                      revealTime={currentApple.revealTime}
+                      status={currentApple.status}
+                    />
+                 </div>
+                 
+                 {appleResult && (
+                   <div className="bg-ringo-bg/50 rounded-xl p-4 mt-6">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm text-gray-500">状態</span>
+                        <span className="font-bold">{appleResult.status}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => fetchResult(String(appleResult.id))}
+                        className="btn-secondary py-2 text-sm w-full"
+                      >
+                        {isResultLoading ? "更新中..." : "状態を更新する"}
+                      </button>
+                   </div>
+                 )}
+               </div>
+             ) : (
+               <div className="py-10">
+                 <div className="text-6xl mb-6 animate-bounce">🍎</div>
+                 <h2 className="text-2xl font-bold text-ringo-ink mb-2">りんごを引く準備完了！</h2>
+                 <p className="text-gray-500 mb-8 text-sm">
+                   ボタンを押すと抽選が始まります。<br/>
+                   結果は24時間後にわかります。
+                 </p>
+                 <button 
+                   type="button" 
+                   onClick={handleDraw} 
+                   className="btn-primary w-full shadow-lg text-lg py-4" 
+                   disabled={isLoading}
+                 >
+                   {isLoading ? "抽選中..." : "運命のりんごを引く！"}
+                 </button>
+                 {error && <p className="mt-4 text-ringo-red text-sm bg-ringo-red/10 p-2 rounded">{error}</p>}
+               </div>
+             )}
+          </section>
 
-        <section className="grid gap-8 md:grid-cols-2">
-          <div className="rounded-3xl border border-ringo-purple/20 bg-white/80 p-6 shadow-ringo-card">
-            <h2 className="text-xl font-bold">現在のりんご確率</h2>
-            <p className="text-sm text-ringo-ink/70">
-              Probability Design 仕様書準拠のベース値。紹介人数やRTPによりリアルタイムで調整されます。
-            </p>
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          {/* Probabilities */}
+          <section className="bg-white/60 rounded-2xl p-6 border border-ringo-pink-soft/30">
+            <h3 className="text-sm font-bold text-ringo-ink mb-4 flex items-center justify-between">
+              <span>📊 現在の確率</span>
+              <span className="text-xs font-normal text-gray-400">リアルタイム変動中</span>
+            </h3>
+            
+            <div className="space-y-3">
               {(probabilityInfo
-                ? probabilityOrder.map(({ key, label }) => ({
-                    label,
-                    value: `${(probabilityInfo.probabilities[key] * 100).toFixed(1)}%`,
-                  }))
-                : defaultProbabilities
-              ).map((item) => (
-                <div key={item.label} className="rounded-2xl bg-ringo-bg/70 p-4">
-                  <p className="text-sm text-ringo-ink/70">{item.label}</p>
-                  <p className="text-2xl font-bold text-ringo-red">{item.value}</p>
-                </div>
-              ))}
-            </div>
-            <button type="button" onClick={handleDraw} className="btn-primary mt-6 w-full" disabled={isLoading}>
-              {isLoading ? "抽選中..." : "今すぐりんごを引く"}
-            </button>
-            {error && <p className="mt-3 text-sm text-ringo-red">{error}</p>}
-            {probabilityError && <p className="mt-3 text-sm text-ringo-red">{probabilityError}</p>}
-            {probabilityInfo?.reasons?.length ? (
-              <div className="mt-6 rounded-2xl bg-white/70 p-4 text-xs text-ringo-ink/80">
-                <p className="font-semibold text-ringo-red">確率が変動する理由</p>
-                <ul className="mt-2 list-disc space-y-1 pl-5">
-                  {probabilityInfo.reasons.map((reason, index) => (
-                    <li key={`${reason}-${index}`}>{reason}</li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-          </div>
-
-          <div className="rounded-3xl border border-ringo-purple/20 bg-white/80 p-6 shadow-ringo-card">
-            <h2 className="text-xl font-bold">あなたのステータス</h2>
-            <div className="mt-4 space-y-3 text-sm">
-              <p>
-                <span className="text-ringo-ink/70">ユーザー:</span> {user?.email ?? "-"}
-              </p>
-              <p>
-                <span className="text-ringo-ink/70">ステータス:</span> {user?.status ?? "-"}
-              </p>
-              <p>
-                <span className="text-ringo-ink/70">紹介人数:</span> {probabilityInfo?.meta.referral_count ?? "-"}
-              </p>
-              <p>
-                <span className="text-ringo-ink/70">シルバー/ゴールド完了:</span> {probabilityInfo?.meta.silver_gold_completed_count ?? "-"} 回
-              </p>
-              <p>
-                <span className="text-ringo-ink/70">最終完了日:</span>{" "}
-                {probabilityInfo?.meta.last_silver_gold_completed_at
-                  ? new Date(probabilityInfo.meta.last_silver_gold_completed_at).toLocaleDateString()
-                  : "まだ完了していません"}
-              </p>
-              <p>
-                <span className="text-ringo-ink/70">RTP:</span> {probabilityInfo ? probabilityInfo.meta.rtp.toFixed(2) : "-"}
-                {" ／ ブートストラップ: "}
-                {probabilityInfo ? (probabilityInfo.meta.using_bootstrap ? "適用中" : "解除済み") : "-"}
-              </p>
-              <p>
-                <span className="text-ringo-ink/70">予測RTP:</span> {probabilityInfo ? probabilityInfo.meta.predicted_rtp.toFixed(2) : "-"}
-              </p>
-              <p>
-                <span className="text-ringo-ink/70">今月の新規登録:</span>{" "}
-                {probabilityInfo ? probabilityInfo.meta.monthly_new_users : "-"}人
-                {typeof probabilityInfo?.meta.growth_rate === "number" && (
-                  <span className="text-ringo-ink/60">
-                    （成長率 {(probabilityInfo.meta.growth_rate * 100).toFixed(1)}%）
-                  </span>
-                )}
-              </p>
-              <p className="text-ringo-ink/70">ステータスは Supabase の users テーブルから取得しています。</p>
-            </div>
-          </div>
-        </section>
-
-        {appleResult && (
-          <section className="grid gap-6 md:grid-cols-2">
-            <div className="rounded-3xl border border-ringo-purple/20 bg-white/80 p-6 shadow-ringo-card text-sm">
-              <h2 className="text-xl font-bold text-ringo-red">りんご結果</h2>
-              <p className="mt-2 text-ringo-ink/70">24時間後に自動公開されます。最新の状態を確認しましょう。</p>
-              <dl className="mt-4 space-y-2">
-                <div className="flex justify-between">
-                  <dt className="text-ringo-ink/70">種別</dt>
-                  <dd className="font-semibold text-ringo-ink">{appleResult.apple_type.toUpperCase()}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-ringo-ink/70">状態</dt>
-                  <dd className="font-semibold text-ringo-ink">{appleResult.status}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-ringo-ink/70">公開済み</dt>
-                  <dd className="font-semibold text-ringo-ink">{appleResult.is_revealed ? "はい" : "まだ"}</dd>
-                </div>
-              </dl>
-              <button
-                type="button"
-                onClick={() => fetchResult(String(appleResult.id))}
-                className="mt-4 w-full rounded-ringo-pill border border-ringo-pink py-3 text-sm font-semibold text-ringo-pink transition hover:bg-ringo-pink/10"
-              >
-                {isResultLoading ? "更新中..." : "結果を更新"}
-              </button>
-            </div>
-
-            <div className="rounded-3xl border border-ringo-gold/20 bg-ringo-beige/40 p-6 shadow-ringo-card text-sm">
-              <h2 className="text-xl font-bold text-ringo-red">購入免除チケット</h2>
-              <p className="mt-2 text-ringo-ink/70">シルバー以上のりんごで獲得したチケットは、次回購入をスキップできます。</p>
-              <p className="mt-4 text-3xl font-bold text-ringo-red">{appleResult.purchase_available} 枚</p>
-              <button
-                type="button"
-                onClick={handleConsume}
-                disabled={appleResult.purchase_available <= 0}
-                className="btn-primary mt-4 w-full"
-              >
-                チケットを使用する
-              </button>
-              {consumeMessage && <p className="mt-2 text-xs text-ringo-ink/70">{consumeMessage}</p>}
+                ? probabilityOrder
+                : []
+              ).map(({ key, label, color }) => {
+                const percent = probabilityInfo?.probabilities[key] ? probabilityInfo.probabilities[key] * 100 : 0;
+                return (
+                  <div key={key} className="space-y-1">
+                    <div className="flex justify-between text-xs text-gray-600">
+                      <span>{label}</span>
+                      <span className="font-bold">{percent.toFixed(1)}%</span>
+                    </div>
+                    <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full ${color}`} 
+                        style={{ width: `${percent}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </section>
-        )}
 
+          {/* Tickets */}
+          {appleResult && (
+            <section className="bg-gradient-to-br from-ringo-gold/20 to-ringo-yellow/10 rounded-2xl p-6 border border-ringo-gold/30 text-center">
+              <h3 className="text-sm font-bold text-ringo-bronze mb-1">🎟 購入免除チケット</h3>
+              <div className="text-4xl font-bold text-ringo-gold drop-shadow-sm my-2">
+                {appleResult.purchase_available} <span className="text-base font-normal text-ringo-ink">枚</span>
+              </div>
+              
+              {appleResult.purchase_available > 0 && (
+                <div className="mt-4">
+                  <button
+                    type="button"
+                    onClick={handleConsume}
+                    className="btn-secondary bg-white text-ringo-bronze border-ringo-bronze text-sm py-2 px-6"
+                  >
+                    チケットを使う
+                  </button>
+                  {consumeMessage && <p className="mt-2 text-xs text-ringo-bronze">{consumeMessage}</p>}
+                </div>
+              )}
+            </section>
+          )}
 
-        {currentApple ? (
-          <AppleReveal
-            appleType={currentApple.appleType}
-            drawTime={currentApple.drawTime}
-            revealTime={currentApple.revealTime}
-            status={currentApple.status}
-          />
-        ) : (
-          <div className="rounded-3xl border border-dashed border-ringo-purple/40 bg-white/70 p-10 text-center text-sm text-ringo-ink/70">
-            まだ抽選していません。りんごを引くボタンを押して、初めてのりんごカードを開いてみよう！
-          </div>
-        )}
-
-        <section className="space-y-4 rounded-3xl border border-ringo-purple/20 bg-white/80 p-6 text-sm shadow-ringo-card">
-          <h2 className="text-xl font-bold">ルールのおさらい</h2>
-          <ul className="list-disc space-y-2 pl-6">
-            <li>抽選結果は24時間後に完全公開。途中経過でもドキドキ感を楽しめます。</li>
-            <li>毒りんごを引いた場合、購入義務を果たした後に再挑戦できます。</li>
-            <li>シルバー・ゴールド・赤りんごはチケットとして購入免除が付与され、完了時に紹介カウントが調整されます。</li>
-          </ul>
-        </section>
-
-        <section className="rounded-3xl border border-ringo-purple/20 bg-ringo-slate-light/40 p-6 text-sm shadow-ringo-card">
-          <h2 className="text-xl font-bold text-ringo-red">友達紹介で確率アップ</h2>
-          <p className="mt-2 text-ringo-ink/80">
-            友達を招待すると紹介人数に応じてシルバー以上のりんごが出やすくなります。目標ハードルをクリアして特典を解放しましょう。
-          </p>
-          <Link href="/friends" className="btn-primary mt-4 inline-flex items-center justify-center px-6">
-            友達紹介ページへ進む
+          {/* Friends CTA */}
+          <Link href="/friends" className="block">
+            <div className="bg-gradient-to-r from-ringo-rose to-ringo-pink text-white rounded-2xl p-6 shadow-md transform transition hover:scale-[1.02] active:scale-95">
+              <div className="flex items-center justify-between">
+                 <div>
+                   <h3 className="font-bold text-lg">お友達を招待する</h3>
+                   <p className="text-xs opacity-90">レアりんごの確率がアップ！</p>
+                 </div>
+                 <div className="text-3xl">👯‍♀️</div>
+              </div>
+            </div>
           </Link>
-        </section>
-      </main>
+
+          {/* Tech Info Toggle */}
+          <div className="text-center pt-4">
+            <button 
+              onClick={() => setShowTechInfo(!showTechInfo)}
+              className="text-xs text-gray-300 underline"
+            >
+              {showTechInfo ? "詳細情報を隠す" : "詳細情報を表示"}
+            </button>
+            
+            {showTechInfo && probabilityInfo && (
+              <div className="mt-4 text-left text-xs text-gray-400 bg-gray-50 p-4 rounded-xl space-y-1">
+                 <p>RTP: {probabilityInfo.meta.rtp.toFixed(3)}</p>
+                 <p>Predicted RTP: {probabilityInfo.meta.predicted_rtp.toFixed(3)}</p>
+                 <p>User Growth: {(probabilityInfo.meta.growth_rate * 100).toFixed(1)}%</p>
+                 <p>Silver/Gold Completed: {probabilityInfo.meta.silver_gold_completed_count}</p>
+                 <div className="mt-2 border-t pt-2">
+                   <p className="font-bold">変動理由:</p>
+                   <ul className="list-disc pl-4">
+                     {probabilityInfo.reasons.map((r, i) => <li key={i}>{r}</li>)}
+                   </ul>
+                 </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </FlowLayout>
     </UserFlowGuard>
   );
 }

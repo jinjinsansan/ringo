@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-
 import { UserFlowGuard } from "@/components/UserFlowGuard";
 import { fetchDashboard } from "@/lib/status";
 import { useUser } from "@/lib/user";
@@ -83,140 +82,120 @@ export default function DashboardPage() {
 
   return (
     <UserFlowGuard requiredStatus="first_purchase_completed">
-      <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-6 px-4 py-10 text-ringo-ink">
-        <header className="space-y-1">
-          <p className="text-sm font-semibold text-ringo-red">HOME</p>
-          <h1 className="font-logo text-4xl font-bold">マイページ</h1>
-          <p className="text-sm text-ringo-ink/70">りんごや紹介状況、欲しいものリストをまとめてチェックできます。</p>
+      <div className="min-h-screen bg-ringo-bg pb-20 font-body text-ringo-ink">
+        {/* Header */}
+        <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-ringo-pink-soft/50 shadow-sm px-6 py-4 flex items-center justify-between">
+          <h1 className="font-logo font-bold text-xl text-ringo-rose">🍎 マイページ</h1>
+          <Link href="/logout" className="text-xs text-gray-500 hover:text-ringo-red">ログアウト</Link>
         </header>
 
-        {error && <p className="rounded-3xl border border-ringo-red/30 bg-ringo-pink/10 px-4 py-3 text-sm text-ringo-red">{error}</p>}
+        <main className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+          {error && <p className="bg-ringo-red/10 border border-ringo-red/30 text-ringo-red p-4 rounded-2xl text-center">{error}</p>}
 
-        {isLoading ? (
-          <div className="mt-6 text-center text-sm text-ringo-ink/60">読み込み中…</div>
-        ) : (
-          <>
-            <section className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-3xl border border-ringo-purple/20 bg-white/80 p-5 shadow-ringo-card">
-                <p className="text-sm font-semibold text-ringo-red">🍎 あなたのりんご</p>
-                <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+          {isLoading ? (
+            <div className="text-center py-12 text-gray-400">データを読み込んでいます...</div>
+          ) : (
+            <>
+              {/* Main Actions */}
+              <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                 <Link href="/draw" className="group bg-gradient-to-br from-ringo-rose to-ringo-pink text-white p-6 rounded-[2rem] shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]">
+                    <div className="text-4xl mb-2 group-hover:animate-bounce">🍎</div>
+                    <h2 className="font-bold text-lg">りんごを引く</h2>
+                    <p className="text-xs opacity-90">運試しに挑戦！</p>
+                 </Link>
+                 <Link href="/friends" className="group bg-white border-2 border-ringo-purple/20 p-6 rounded-[2rem] shadow-sm hover:border-ringo-purple transition-all hover:scale-[1.02]">
+                    <div className="text-4xl mb-2">👯‍♀️</div>
+                    <h2 className="font-bold text-lg text-ringo-purple">友達紹介</h2>
+                    <p className="text-xs text-gray-500">紹介人数: <span className="font-bold">{stats.referral_count ?? 0}</span>人</p>
+                 </Link>
+                 <Link href="/purchase" className="group bg-white border-2 border-ringo-green/20 p-6 rounded-[2rem] shadow-sm hover:border-ringo-green transition-all hover:scale-[1.02]">
+                    <div className="text-4xl mb-2">🎁</div>
+                    <h2 className="font-bold text-lg text-ringo-green">購入状況</h2>
+                    <div className="text-xs text-gray-500 mt-1 flex justify-between">
+                       <span>義務: {stats.purchase_obligation}</span>
+                       <span>免除: {stats.purchase_available}</span>
+                    </div>
+                 </Link>
+              </section>
+
+              {/* Apples Collection */}
+              <section className="bg-white/80 rounded-[2rem] p-6 shadow-ringo-card border border-white">
+                <h2 className="text-lg font-bold text-ringo-ink mb-4 flex items-center gap-2">
+                   <span>🧺</span> りんごコレクション
+                </h2>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                   {Object.entries(appleLabels).map(([key, label]) => (
-                    <div key={key} className="rounded-2xl bg-ringo-bg/70 px-4 py-3">
-                      <p className="text-xs text-ringo-ink/60">{label}</p>
-                      <p className="text-2xl font-bold text-ringo-ink">{apples[key] ?? 0}</p>
+                    <div key={key} className="bg-ringo-bg rounded-2xl p-3 text-center border border-ringo-pink-soft/30">
+                      <div className="text-2xl mb-1 font-bold text-ringo-ink">{apples[key] ?? 0}</div>
+                      <div className="text-xs text-gray-500">{label}</div>
                     </div>
                   ))}
                 </div>
-              </div>
+              </section>
 
-              <div className="rounded-3xl border border-ringo-purple/20 bg-white/80 p-5 shadow-ringo-card">
-                <p className="text-sm font-semibold text-ringo-red">📊 あなたの統計</p>
-                <dl className="mt-3 space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <dt className="text-ringo-ink/60">紹介人数</dt>
-                    <dd className="font-semibold">{stats.referral_count ?? 0} 人</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-ringo-ink/60">購入義務残数</dt>
-                    <dd className="font-semibold text-ringo-red">{stats.purchase_obligation ?? 0} 回</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-ringo-ink/60">購入権残数</dt>
-                    <dd className="font-semibold text-ringo-green">{stats.purchase_available ?? 0} 回</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-ringo-ink/60">シルバー/ゴールド完了</dt>
-                    <dd className="font-semibold">{stats.silver_gold_completed_count ?? 0} 回</dd>
-                  </div>
-                </dl>
-              </div>
-            </section>
-
-            <section className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-3xl border border-ringo-purple/20 bg-white/80 p-5 shadow-ringo-card">
-                <p className="text-sm font-semibold text-ringo-red">🎁 あなたの欲しいものリスト</p>
-                <div className="mt-3 space-y-2 text-sm">
-                  <p className="text-ringo-ink/70">URL:</p>
+              {/* Info Grid */}
+              <section className="grid gap-6 md:grid-cols-2">
+                {/* Wishlist */}
+                <div className="bg-white/80 rounded-[2rem] p-6 shadow-ringo-card border border-white">
+                  <h2 className="text-lg font-bold text-ringo-ink mb-4">📝 欲しいものリスト</h2>
                   {data?.user?.wishlist_url ? (
-                    <a href={data.user.wishlist_url as string} target="_blank" rel="noreferrer" className="break-all text-ringo-pink underline">
-                      {data.user.wishlist_url}
-                    </a>
-                  ) : (
-                    <p className="text-ringo-ink/50">まだ登録されていません。</p>
-                  )}
-                  <p className="text-xs text-ringo-ink/50">初回登録後は変更できません。</p>
-                  {!data?.user?.wishlist_url && (
-                    <Link href="/register-wishlist" className="btn-primary inline-flex w-full items-center justify-center text-sm">
-                      欲しいものリストを登録
-                    </Link>
-                  )}
-                </div>
-              </div>
-
-              <div className="rounded-3xl border border-ringo-purple/20 bg-white/80 p-5 shadow-ringo-card space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-ringo-red">🔗 紹介リンク</p>
-                  {data?.user?.referral_code && (
-                    <span className="text-xs text-ringo-ink/60">コード: {data.user.referral_code}</span>
-                  )}
-                </div>
-                {referralLink ? (
-                  <div className="space-y-2 text-sm">
-                    <p className="break-all rounded-2xl bg-ringo-bg/70 px-3 py-2 text-ringo-ink/80">{referralLink}</p>
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                      <button
-                        type="button"
-                        onClick={handleCopy}
-                        className="flex-1 rounded-ringo-pill border border-ringo-pink py-2 text-sm font-semibold text-ringo-pink hover:bg-ringo-pink/10"
-                      >
-                        {copied ? "コピーしました" : "リンクをコピー"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setShowQr((value) => !value)}
-                        className="flex-1 rounded-ringo-pill border border-ringo-purple py-2 text-sm font-semibold text-ringo-purple hover:bg-ringo-purple/10"
-                      >
-                        QRコード表示
-                      </button>
-                    </div>
-                    {showQr && (
-                      <div className="mt-3 flex justify-center rounded-2xl bg-white/90 p-4">
-                        <QRCode value={referralLink} size={160} />
+                    <div className="space-y-3">
+                      <div className="bg-gray-50 p-3 rounded-xl text-xs text-gray-500 break-all border border-gray-100">
+                        {data.user.wishlist_url}
                       </div>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-sm text-ringo-ink/60">紹介リンクの読み込みに失敗しました。</p>
-                )}
-              </div>
-            </section>
+                      <a 
+                        href={data.user.wishlist_url} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="btn-secondary w-full text-center text-xs py-2 block"
+                      >
+                        リストを確認する
+                      </a>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-sm text-gray-400 mb-4">まだ登録されていません</p>
+                      <Link href="/register-wishlist" className="btn-primary w-full text-sm py-2">
+                        登録する
+                      </Link>
+                    </div>
+                  )}
+                </div>
 
-            <section className="space-y-3 rounded-3xl border border-ringo-purple/20 bg-white/80 p-5 text-sm shadow-ringo-card">
-              <p className="text-sm font-semibold text-ringo-red">次のアクション</p>
-              <div className="grid gap-3 md:grid-cols-3">
-                <Link
-                  href="/draw"
-                  className="rounded-2xl border border-ringo-pink bg-ringo-pink/10 px-4 py-3 text-center font-semibold text-ringo-pink hover:bg-ringo-pink/20"
-                >
-                  りんごを引く
-                </Link>
-                <Link
-                  href="/friends"
-                  className="rounded-2xl border border-ringo-purple/40 bg-ringo-purple/10 px-4 py-3 text-center font-semibold text-ringo-purple hover:bg-ringo-purple/20"
-                >
-                  紹介ページを見る
-                </Link>
-                <Link
-                  href="/purchase"
-                  className="rounded-2xl border border-ringo-ink/10 bg-ringo-bg px-4 py-3 text-center font-semibold text-ringo-ink hover:bg-ringo-bg/80"
-                >
-                  購入状況を確認
-                </Link>
-              </div>
-            </section>
-          </>
-        )}
-      </main>
+                {/* Share */}
+                <div className="bg-white/80 rounded-[2rem] p-6 shadow-ringo-card border border-white">
+                  <h2 className="text-lg font-bold text-ringo-ink mb-4">🔗 シェア用リンク</h2>
+                  {referralLink ? (
+                    <div className="space-y-4">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleCopy}
+                          className="flex-1 btn-secondary text-xs py-2 border-ringo-pink text-ringo-pink"
+                        >
+                          {copied ? "コピー完了！" : "リンクをコピー"}
+                        </button>
+                        <button
+                          onClick={() => setShowQr(!showQr)}
+                          className="flex-1 btn-secondary text-xs py-2 border-ringo-purple text-ringo-purple"
+                        >
+                          QRコード
+                        </button>
+                      </div>
+                      {showQr && (
+                        <div className="flex justify-center bg-white p-4 rounded-xl shadow-inner border border-gray-100">
+                           <QRCode value={referralLink} size={120} />
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-400">読み込み中...</p>
+                  )}
+                </div>
+              </section>
+            </>
+          )}
+        </main>
+      </div>
     </UserFlowGuard>
   );
 }

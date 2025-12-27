@@ -5,15 +5,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { UserFlowGuard } from "@/components/UserFlowGuard";
+import { FlowLayout } from "@/components/FlowLayout";
 import { updateUserStatus } from "@/lib/status";
 import { useUser } from "@/lib/user";
-
-const checklist = [
-  "Amazonの欲しいものリストURLを用意し、3000〜4000円のアイテムを登録する",
-  "誰かのリストから購入し、スクリーンショットを提出する",
-  "AI＋管理者による確認が終わるまでは次のステップへ進まない",
-  "毒りんごを引いた場合は再度誰かのリストを購入する",
-];
 
 export default function TutorialPage() {
   const router = useRouter();
@@ -46,54 +40,107 @@ export default function TutorialPage() {
 
   return (
     <UserFlowGuard requiredStatus="terms_agreed">
-      <main className="mx-auto flex min-h-screen max-w-4xl flex-col gap-6 px-4 py-10 text-ringo-ink">
-        <header className="space-y-2 text-center">
-          <p className="text-sm font-semibold text-ringo-red">STEP.04</p>
-          <h1 className="font-logo text-4xl font-bold">りんご会♪の使い方</h1>
-          <p className="text-sm text-ringo-ink/70">Detailed User Flow に基づく全ステップを確認し、チェックを終えてから次へ進みましょう。</p>
-        </header>
+      <FlowLayout 
+        currentStepIndex={1} 
+        title="遊び方ガイド"
+        subtitle="りんご会♪の流れをマスターしましょう！"
+        showBack
+      >
+        <div className="space-y-8">
+          {/* Flow Cards */}
+          <section className="space-y-4">
+            <h2 className="text-lg font-bold text-ringo-rose text-center">
+              〜 ハッピーの循環 〜
+            </h2>
+            
+            <div className="grid gap-4">
+              <div className="bg-white/60 p-4 rounded-2xl flex items-center gap-4 border border-ringo-pink-soft/30 shadow-sm">
+                <div className="w-12 h-12 rounded-full bg-ringo-pink-soft flex items-center justify-center text-2xl">
+                  🎁
+                </div>
+                <div>
+                  <h3 className="font-bold text-ringo-ink">1. ギフトを贈る</h3>
+                  <p className="text-xs text-gray-500">
+                    表示された誰かの欲しいものリストから、3,000円〜4,000円の商品をプレゼント。
+                  </p>
+                </div>
+              </div>
 
-        <section className="space-y-4 rounded-3xl border border-ringo-purple/20 bg-white/80 p-6 shadow-ringo-card text-sm leading-relaxed">
-          <h2 className="text-xl font-semibold text-ringo-red">利用フロー</h2>
-          <ol className="list-decimal space-y-2 pl-6">
-            <li>ログイン後、利用規約・使い方を順に確認</li>
-            <li>マッチした誰かのリストを購入し、スクリーンショットをアップロード</li>
-            <li>AIと管理者の承認後、自分の欲しいものリストを登録</li>
-            <li>りんごを引き、24時間後に結果を確認</li>
-          </ol>
-        </section>
+              <div className="bg-white/60 p-4 rounded-2xl flex items-center gap-4 border border-ringo-pink-soft/30 shadow-sm">
+                <div className="w-12 h-12 rounded-full bg-ringo-purple flex items-center justify-center text-2xl">
+                  📸
+                </div>
+                <div>
+                  <h3 className="font-bold text-ringo-ink">2. 報告する</h3>
+                  <p className="text-xs text-gray-500">
+                    注文完了画面のスクリーンショットをアップロード。AIとりんごちゃんが確認します！
+                  </p>
+                </div>
+              </div>
 
-        <section className="rounded-3xl border border-ringo-purple/20 bg-white/80 p-6 shadow-ringo-card text-sm">
-          <h2 className="text-xl font-semibold text-ringo-red">チェックリスト</h2>
-          <ul className="mt-3 space-y-3">
-            {checklist.map((item) => (
-              <li key={item} className="flex items-start gap-3">
-                <span className="mt-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-ringo-rose text-xs text-white">✓</span>
-                <p>{item}</p>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-4 text-xs text-ringo-ink/60">
-            詳細は <Link href="/terms" className="text-ringo-pink underline">利用規約</Link> と README の「ユーザーフロー」を参照してください。
-          </p>
-        </section>
+              <div className="bg-white/60 p-4 rounded-2xl flex items-center gap-4 border border-ringo-pink-soft/30 shadow-sm">
+                <div className="w-12 h-12 rounded-full bg-ringo-red flex items-center justify-center text-2xl">
+                  🍎
+                </div>
+                <div>
+                  <h3 className="font-bold text-ringo-ink">3. りんごを引く</h3>
+                  <p className="text-xs text-gray-500">
+                    承認されると抽選権をGET。24時間後に結果がわかるドキドキのカードオープン♪
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
 
-        {user && user.status !== "terms_agreed" ? (
-          <div className="rounded-3xl border border-ringo-gold/40 bg-ringo-gold/10 p-6 text-sm text-ringo-ink">
-            すでに確認済みです。<button className="text-ringo-pink underline" onClick={() => router.push("/purchase")}>
-              購入ステップへ進む
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-4 rounded-3xl bg-white/80 p-6 text-center shadow-ringo-card">
-            <p className="text-sm text-ringo-ink/70">チェックを終えたら下のボタンで次のステップへ。</p>
-            <button type="button" onClick={handleComplete} className="btn-primary w-full" disabled={isSubmitting}>
-              {isSubmitting ? "更新中..." : "理解しました"}
-            </button>
-            {error && <p className="text-sm text-ringo-red">{error}</p>}
-          </div>
-        )}
-      </main>
+          {/* Checklist */}
+          <section className="bg-ringo-bg/50 border border-ringo-pink-soft rounded-2xl p-6">
+             <h2 className="text-sm font-bold text-ringo-ink mb-4 text-center">
+               ✨ スタート前の確認リスト
+             </h2>
+             <ul className="space-y-3">
+               {[
+                 "Amazonの欲しいものリストURLを準備しましたか？",
+                 "3,000円〜4,000円の商品を登録していますか？",
+                 "誰かにプレゼントする準備はできていますか？",
+                 "みんなで楽しむ気持ちを持っていますか？"
+               ].map((text, i) => (
+                 <li key={i} className="flex items-start gap-3">
+                   <span className="flex-shrink-0 w-5 h-5 rounded-full bg-ringo-rose text-white flex items-center justify-center text-xs mt-0.5">✓</span>
+                   <span className="text-sm text-gray-600">{text}</span>
+                 </li>
+               ))}
+             </ul>
+          </section>
+
+          {user && user.status !== "terms_agreed" ? (
+            <div className="text-center bg-ringo-green/10 p-4 rounded-xl border border-ringo-green/30">
+              <p className="text-ringo-green font-bold mb-2">準備バッチリですね！ 🎉</p>
+              <button 
+                className="btn-secondary py-2 px-6 text-sm" 
+                onClick={() => router.push("/purchase")}
+              >
+                購入ステップへ進む
+              </button>
+            </div>
+          ) : (
+             <div className="text-center pt-2">
+               <button 
+                 type="button" 
+                 onClick={handleComplete} 
+                 className="btn-primary w-full shadow-lg" 
+                 disabled={isSubmitting}
+               >
+                 {isSubmitting ? "処理中..." : "理解しました！次へ"}
+               </button>
+               {error && (
+                 <p className="text-sm text-ringo-red mt-3 bg-ringo-red/10 p-2 rounded-lg">
+                   {error}
+                 </p>
+               )}
+             </div>
+          )}
+        </div>
+      </FlowLayout>
     </UserFlowGuard>
   );
 }

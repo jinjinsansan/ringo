@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useMemo, useState } from "react";
-
 import { createSupabaseClient } from "@/lib/supabase/client";
 
 type FormErrors = {
@@ -133,18 +132,20 @@ function RegisterContent() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-ringo-bg px-4 py-12 text-ringo-ink">
-      <div className="w-full max-w-lg space-y-8 rounded-3xl bg-white/90 px-8 py-10 shadow-ringo-card">
-        <div className="space-y-2 text-center">
-          <p className="text-sm font-semibold text-ringo-red">STEP.01</p>
-          <h1 className="font-logo text-3xl font-bold">りんご会♪ 新規登録</h1>
-          <p className="text-sm text-ringo-ink/70">
-            メールとパスワードを入力して、りんご会♪の世界へ。登録後は利用規約ページへ進んでいただきます。
+      <div className="w-full max-w-lg space-y-8 p-8 sm:p-12 card-apple">
+        <div className="space-y-4 text-center">
+          <Link href="/" className="inline-block text-4xl mb-2 hover:scale-110 transition-transform">
+            🎁
+          </Link>
+          <h1 className="font-logo text-3xl font-bold text-ringo-ink">はじめまして♪</h1>
+          <p className="text-sm text-gray-500 leading-relaxed">
+            アカウントを作成して、<br/>りんご会を楽しみましょう！
           </p>
         </div>
 
         <form className="space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-1">
-            <label htmlFor="email" className="text-sm font-semibold">
+          <div className="space-y-2">
+            <label htmlFor="email" className="text-sm font-bold text-ringo-ink ml-1">
               メールアドレス
             </label>
             <input
@@ -152,15 +153,15 @@ function RegisterContent() {
               name="email"
               type="email"
               autoComplete="email"
-              className="w-full rounded-2xl border border-ringo-purple/30 bg-ringo-bg/40 px-4 py-3 text-base outline-none focus:border-ringo-pink focus:ring-2 focus:ring-ringo-pink/30"
-              placeholder="you@example.com"
+              className="w-full rounded-full border-2 border-ringo-pink-soft bg-white/50 px-6 py-3 text-base outline-none focus:border-ringo-rose focus:bg-white transition-colors"
+              placeholder="apple@example.com"
               required
             />
-            {formErrors.email && <p className="text-sm text-ringo-red">{formErrors.email}</p>}
+            {formErrors.email && <p className="text-sm text-ringo-red ml-2">{formErrors.email}</p>}
           </div>
 
-          <div className="space-y-1">
-            <label htmlFor="password" className="text-sm font-semibold">
+          <div className="space-y-2">
+            <label htmlFor="password" className="text-sm font-bold text-ringo-ink ml-1">
               パスワード
             </label>
             <input
@@ -168,16 +169,16 @@ function RegisterContent() {
               name="password"
               type="password"
               autoComplete="new-password"
-              className="w-full rounded-2xl border border-ringo-purple/30 bg-ringo-bg/40 px-4 py-3 text-base outline-none focus:border-ringo-pink focus:ring-2 focus:ring-ringo-pink/30"
+              className="w-full rounded-full border-2 border-ringo-pink-soft bg-white/50 px-6 py-3 text-base outline-none focus:border-ringo-rose focus:bg-white transition-colors"
               placeholder="8文字以上の英数字"
               required
               minLength={8}
             />
-            {formErrors.password && <p className="text-sm text-ringo-red">{formErrors.password}</p>}
+            {formErrors.password && <p className="text-sm text-ringo-red ml-2">{formErrors.password}</p>}
           </div>
 
-          <div className="space-y-1">
-            <label htmlFor="confirmPassword" className="text-sm font-semibold">
+          <div className="space-y-2">
+            <label htmlFor="confirmPassword" className="text-sm font-bold text-ringo-ink ml-1">
               パスワード（確認）
             </label>
             <input
@@ -185,50 +186,56 @@ function RegisterContent() {
               name="confirmPassword"
               type="password"
               autoComplete="new-password"
-              className="w-full rounded-2xl border border-ringo-purple/30 bg-ringo-bg/40 px-4 py-3 text-base outline-none focus:border-ringo-pink focus:ring-2 focus:ring-ringo-pink/30"
+              className="w-full rounded-full border-2 border-ringo-pink-soft bg-white/50 px-6 py-3 text-base outline-none focus:border-ringo-rose focus:bg-white transition-colors"
               placeholder="もう一度入力"
               required
               minLength={8}
             />
-            {formErrors.confirmPassword && <p className="text-sm text-ringo-red">{formErrors.confirmPassword}</p>}
+            {formErrors.confirmPassword && <p className="text-sm text-ringo-red ml-2">{formErrors.confirmPassword}</p>}
           </div>
 
-          <label className="flex items-center gap-3 text-sm">
+          <label className="flex items-center gap-3 text-sm p-2 cursor-pointer hover:bg-white/50 rounded-lg transition-colors">
             <input
               type="checkbox"
               name="terms"
-              className="h-5 w-5 rounded border border-ringo-purple/40 text-ringo-pink focus:ring-ringo-pink"
+              className="h-5 w-5 rounded border-ringo-pink-soft text-ringo-rose focus:ring-ringo-rose"
               required
             />
             <span>
-              <Link href="/terms" className="text-ringo-pink underline">
+              <Link href="/terms" className="text-ringo-rose font-bold hover:underline" target="_blank">
                 利用規約
               </Link>
               に同意します
             </span>
           </label>
-          {formErrors.terms && <p className="text-sm text-ringo-red">{formErrors.terms}</p>}
+          {formErrors.terms && <p className="text-sm text-ringo-red ml-2">{formErrors.terms}</p>}
 
           {serverError && (
-            <div className="rounded-2xl bg-ringo-red/10 px-4 py-3 text-sm text-ringo-red">{serverError}</div>
+            <div className="rounded-2xl bg-ringo-red/10 border border-ringo-red/20 px-4 py-3 text-sm text-ringo-red text-center">
+              {serverError}
+            </div>
           )}
 
           {successMessage && (
-            <div className="rounded-2xl bg-ringo-gold/10 px-4 py-3 text-sm text-ringo-gold">{successMessage}</div>
+            <div className="rounded-2xl bg-ringo-gold/10 border border-ringo-gold/20 px-4 py-3 text-sm text-ringo-gold text-center">
+              {successMessage}
+            </div>
           )}
 
-          <button type="submit" className="btn-primary w-full" disabled={isSubmitting}>
-            {isSubmitting ? "登録処理中..." : "登録する"}
+          <button type="submit" className="btn-primary w-full shadow-lg" disabled={isSubmitting}>
+            {isSubmitting ? "登録処理中..." : "登録してはじめる"}
           </button>
         </form>
 
-        <p className="text-center text-sm text-ringo-ink/70">
-          すでにアカウントをお持ちの方は{" "}
-          <Link href="/login" className="text-ringo-pink underline">
-            こちら
-          </Link>
-          からログイン
-        </p>
+        <div className="space-y-4 text-center text-sm text-gray-500 pt-4 border-t border-ringo-pink-soft/50">
+          <p>
+            すでにアカウントをお持ちの方は{" "}
+            <Link href="/login" className="text-ringo-rose font-bold hover:underline">
+              こちら
+            </Link>
+            から
+          </p>
+        </div>
       </div>
     </main>
   );

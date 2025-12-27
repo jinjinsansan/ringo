@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { UserFlowGuard } from "@/components/UserFlowGuard";
+import { FlowLayout } from "@/components/FlowLayout";
 import { updateUserStatus } from "@/lib/status";
 import { useUser } from "@/lib/user";
 
@@ -35,30 +36,46 @@ export default function VerificationPendingPage() {
 
   return (
     <UserFlowGuard requiredStatus="verifying">
-      <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 px-4 py-10 text-ringo-ink">
-        <header className="space-y-2 text-center">
-          <p className="text-sm font-semibold text-ringo-red">STEP.07</p>
-          <h1 className="font-logo text-4xl font-bold">確認中です</h1>
-          <p className="text-sm text-ringo-ink/70">AI と管理者がスクリーンショットを確認しています。完了までしばらくお待ちください。</p>
-        </header>
+      <FlowLayout 
+        currentStepIndex={3} 
+        title="確認中です..." 
+        subtitle="りんごちゃんが一生懸命チェックしています！"
+      >
+        <div className="space-y-8 text-center">
+          <div className="relative inline-block">
+             <div className="absolute inset-0 bg-ringo-pink-soft/30 rounded-full blur-xl animate-pulse"></div>
+             <div className="text-8xl animate-bounce relative z-10">🕵️‍♀️</div>
+          </div>
 
-        <section className="space-y-4 rounded-3xl border border-ringo-purple/20 bg-white/80 p-6 text-sm leading-relaxed shadow-ringo-card">
-          <p>通常は数時間以内に完了します。状況によっては 24 時間程度かかる場合があります。</p>
-          <ul className="list-disc space-y-2 pl-6">
-            <li>承認されると欲しいものリスト登録フォームへ進めます。</li>
-            <li>却下された場合は再度スクリーンショット提出（Step.06）へ戻ります。</li>
-            <li>毒りんごによる救済措置は管理者が個別に連絡します。</li>
-          </ul>
-        </section>
+          <section className="bg-white/80 rounded-2xl p-6 shadow-ringo-card border border-white">
+            <h2 className="text-lg font-bold text-ringo-ink mb-4">ただいま審査中</h2>
+            <p className="text-sm text-gray-600 leading-relaxed mb-4">
+              提出いただいたスクリーンショットを確認しています。<br/>
+              通常は数分〜数時間で完了しますので、<br/>
+              しばらくお待ちくださいね♪
+            </p>
+            <div className="bg-ringo-bg/50 rounded-xl p-4 text-xs text-gray-500 text-left space-y-2">
+               <p>📌 承認されると…<br/>→ 次の「リスト登録」へ進めるようになります。</p>
+               <p>⚠️ もし何かあれば…<br/>→ メールでお知らせするか、この画面で再提出をお願いします。</p>
+            </div>
+          </section>
 
-        <div className="rounded-3xl border border-dashed border-ringo-purple/40 bg-white/70 p-6 text-sm text-ringo-ink/70">
-          <p>モック環境では下のボタンで承認済み状態に進めます。</p>
-          <button type="button" onClick={markApproved} className="btn-primary mt-4 w-full" disabled={isUpdating}>
-            {isUpdating ? "更新中..." : "承認されたとして進む"}
-          </button>
-          {error && <p className="mt-2 text-sm text-ringo-red">{error}</p>}
+          {/* Debug Button - keep for development but style discretely */}
+          <div className="border border-dashed border-gray-300 rounded-xl p-4 bg-gray-50 text-xs text-gray-400">
+            <p className="mb-2 font-bold">[開発用デバッグボタン]</p>
+            <p className="mb-2">※ 実際の運用では表示されません</p>
+            <button 
+              type="button" 
+              onClick={markApproved} 
+              className="bg-gray-200 hover:bg-gray-300 text-gray-600 px-4 py-2 rounded-lg font-bold transition-colors w-full" 
+              disabled={isUpdating}
+            >
+              {isUpdating ? "更新中..." : "強制的に承認済みにする"}
+            </button>
+            {error && <p className="mt-2 text-red-500">{error}</p>}
+          </div>
         </div>
-      </main>
+      </FlowLayout>
     </UserFlowGuard>
   );
 }

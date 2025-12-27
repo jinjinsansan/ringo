@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useMemo, useState } from "react";
-
 import { createSupabaseClient } from "@/lib/supabase/client";
 
 function LoginContent() {
@@ -36,18 +35,20 @@ function LoginContent() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-ringo-bg px-4 py-12 text-ringo-ink">
-      <div className="w-full max-w-lg space-y-8 rounded-3xl bg-white/90 px-8 py-10 shadow-ringo-card">
-        <div className="space-y-2 text-center">
-          <p className="text-sm font-semibold text-ringo-red">STEP.02</p>
-          <h1 className="font-logo text-3xl font-bold">りんご会♪ ログイン</h1>
-          <p className="text-sm text-ringo-ink/70">
-            登録時のメールアドレスとパスワードでログインし、利用規約・使い方ページへ順番に進みましょう。
+      <div className="w-full max-w-lg space-y-8 p-8 sm:p-12 card-apple">
+        <div className="space-y-4 text-center">
+          <Link href="/" className="inline-block text-4xl mb-2 hover:scale-110 transition-transform">
+            🍎
+          </Link>
+          <h1 className="font-logo text-3xl font-bold text-ringo-ink">おかえりなさい♪</h1>
+          <p className="text-sm text-gray-500 leading-relaxed">
+            登録時のメールアドレスとパスワードで<br/>ログインしてくださいね。
           </p>
         </div>
 
         <form className="space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-1">
-            <label htmlFor="email" className="text-sm font-semibold">
+          <div className="space-y-2">
+            <label htmlFor="email" className="text-sm font-bold text-ringo-ink ml-1">
               メールアドレス
             </label>
             <input
@@ -55,14 +56,14 @@ function LoginContent() {
               name="email"
               type="email"
               autoComplete="email"
-              className="w-full rounded-2xl border border-ringo-purple/30 bg-ringo-bg/40 px-4 py-3 text-base outline-none focus:border-ringo-pink focus:ring-2 focus:ring-ringo-pink/30"
-              placeholder="you@example.com"
+              className="w-full rounded-full border-2 border-ringo-pink-soft bg-white/50 px-6 py-3 text-base outline-none focus:border-ringo-rose focus:bg-white transition-colors"
+              placeholder="apple@example.com"
               required
             />
           </div>
 
-          <div className="space-y-1">
-            <label htmlFor="password" className="text-sm font-semibold">
+          <div className="space-y-2">
+            <label htmlFor="password" className="text-sm font-bold text-ringo-ink ml-1">
               パスワード
             </label>
             <input
@@ -70,29 +71,33 @@ function LoginContent() {
               name="password"
               type="password"
               autoComplete="current-password"
-              className="w-full rounded-2xl border border-ringo-purple/30 bg-ringo-bg/40 px-4 py-3 text-base outline-none focus:border-ringo-pink focus:ring-2 focus:ring-ringo-pink/30"
+              className="w-full rounded-full border-2 border-ringo-pink-soft bg-white/50 px-6 py-3 text-base outline-none focus:border-ringo-rose focus:bg-white transition-colors"
               placeholder="パスワードを入力"
               required
             />
           </div>
 
           {serverError && (
-            <div className="rounded-2xl bg-ringo-red/10 px-4 py-3 text-sm text-ringo-red">{serverError}</div>
+            <div className="rounded-2xl bg-ringo-red/10 border border-ringo-red/20 px-4 py-3 text-sm text-ringo-red text-center">
+              {serverError}
+            </div>
           )}
 
-          <button type="submit" className="btn-primary w-full" disabled={isSubmitting}>
-            {isSubmitting ? "ログイン中..." : "ログイン"}
+          <button type="submit" className="btn-primary w-full shadow-lg" disabled={isSubmitting}>
+            {isSubmitting ? "ログイン中..." : "ログインする"}
           </button>
         </form>
 
-        <div className="space-y-2 text-center text-sm text-ringo-ink/70">
+        <div className="space-y-4 text-center text-sm text-gray-500 pt-4 border-t border-ringo-pink-soft/50">
           <p>
-            アカウントをお持ちでない方は{" "}
-            <Link href="/register" className="text-ringo-pink underline">
+            はじめての方は{" "}
+            <Link href="/register" className="text-ringo-rose font-bold hover:underline">
               新規登録へ
             </Link>
           </p>
-          <p>パスワードをお忘れの場合は管理者までお問い合わせください。</p>
+          <p className="text-xs text-gray-400">
+            パスワードをお忘れの場合は管理者までお問い合わせください。
+          </p>
         </div>
       </div>
     </main>

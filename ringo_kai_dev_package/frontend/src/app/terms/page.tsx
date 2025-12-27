@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { UserFlowGuard } from "@/components/UserFlowGuard";
+import { FlowLayout } from "@/components/FlowLayout";
 import { updateUserStatus } from "@/lib/status";
 import { useUser } from "@/lib/user";
 
@@ -38,40 +39,75 @@ export default function TermsPage() {
 
   return (
     <UserFlowGuard requiredStatus="registered">
-      <main className="mx-auto flex min-h-screen max-w-4xl flex-col gap-6 px-4 py-10 text-ringo-ink">
-        <header className="space-y-2 text-center">
-          <p className="text-sm font-semibold text-ringo-red">STEP.03</p>
-          <h1 className="font-logo text-4xl font-bold">利用規約</h1>
-          <p className="text-sm text-ringo-ink/70">すべてのユーザーが安全に楽しむため、以下のルールへの同意が必須です。</p>
-        </header>
+      <FlowLayout 
+        currentStepIndex={0} 
+        title="利用規約" 
+        subtitle="みんなが安心して楽しめるように、大切なお約束です。"
+      >
+        <div className="space-y-6">
+          <section className="bg-white/50 rounded-2xl p-6 border border-ringo-pink-soft/50 text-sm leading-relaxed max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-ringo-pink-soft scrollbar-track-transparent">
+            <h2 className="text-lg font-bold text-ringo-rose mb-4 border-b border-ringo-pink-soft pb-2">
+              りんご会♪ 利用規約（抜粋）
+            </h2>
+            <ul className="space-y-4">
+              <li className="flex items-start gap-2">
+                <span className="text-ringo-red font-bold">1.</span>
+                <span>登録情報はあなただけのもの。お友達に貸したりしないでくださいね。</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-ringo-red font-bold">2.</span>
+                <span>Amazonでの購入は、必ずご自身で行ってください。購入証明（スクショ）の提出が必要です。</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-ringo-red font-bold">3.</span>
+                <span>嘘の報告や、画像の加工は絶対にダメ！見つかったら退会となってしまいます。</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-ringo-red font-bold">4.</span>
+                <span>ここで知った誰かの情報を、他の場所で教えたりしないでください。</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-ringo-red font-bold">5.</span>
+                <span>みんなで仲良く、マナーを守って楽しみましょう♪</span>
+              </li>
+            </ul>
+            <p className="mt-6 text-xs text-gray-400">
+              ※ 詳細な規約は別途PDF等で定める正式版に準拠します。
+            </p>
+          </section>
 
-        <section className="space-y-4 rounded-3xl border border-ringo-purple/20 bg-white/80 p-6 shadow-ringo-card text-sm leading-relaxed">
-          <h2 className="text-xl font-semibold text-ringo-red">抜粋</h2>
-          <ul className="list-disc space-y-3 pl-6">
-            <li>登録情報は本人のみ使用可能であり、第三者へ譲渡・貸与してはなりません。</li>
-            <li>Amazonでの購入は必ず本人決済で行い、スクリーンショットを提出する義務があります。</li>
-            <li>虚偽の購入報告、スクリーンショット改ざん、その他の不正が発覚した場合は即時退会となります。</li>
-            <li>コミュニティ内で知り得た情報を外部に公開しないでください。</li>
-            <li>詳細は ZIP に含まれる正式な利用規約全文に従います。</li>
-          </ul>
-        </section>
-
-        {user && user.status !== "registered" ? (
-          <div className="rounded-3xl border border-ringo-gold/40 bg-ringo-gold/10 p-6 text-sm text-ringo-ink">
-            すでに同意済みです。<button className="text-ringo-pink underline" onClick={() => router.push("/tutorial")}>
-              使い方ページへ進む
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-4 rounded-3xl bg-white/80 p-6 text-center shadow-ringo-card">
-            <p className="text-sm text-ringo-ink/70">同意すると次のステップ（使い方）へ進みます。</p>
-            <button type="button" onClick={handleAgree} className="btn-primary w-full" disabled={isSubmitting}>
-              {isSubmitting ? "更新中..." : "利用規約に同意する"}
-            </button>
-            {error && <p className="text-sm text-ringo-red">{error}</p>}
-          </div>
-        )}
-      </main>
+          {user && user.status !== "registered" ? (
+            <div className="text-center bg-ringo-green/10 p-4 rounded-xl border border-ringo-green/30">
+              <p className="text-ringo-green font-bold mb-2">すでに同意済みです ✨</p>
+              <button 
+                className="btn-secondary py-2 px-6 text-sm" 
+                onClick={() => router.push("/tutorial")}
+              >
+                次のステップへ進む
+              </button>
+            </div>
+          ) : (
+            <div className="text-center pt-4">
+              <p className="text-sm text-gray-500 mb-4">
+                上記の内容を確認し、同意する場合はボタンを押して進んでください。
+              </p>
+              <button 
+                type="button" 
+                onClick={handleAgree} 
+                className="btn-primary w-full shadow-lg" 
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "処理中..." : "規約に同意して次へ"}
+              </button>
+              {error && (
+                <p className="text-sm text-ringo-red mt-3 bg-ringo-red/10 p-2 rounded-lg">
+                  {error}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      </FlowLayout>
     </UserFlowGuard>
   );
 }

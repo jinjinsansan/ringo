@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { UserFlowGuard } from "@/components/UserFlowGuard";
+import { FlowLayout } from "@/components/FlowLayout";
 import { authorizedFetch } from "@/lib/status";
 import { useUser } from "@/lib/user";
 
@@ -109,7 +110,7 @@ export default function UploadScreenshotPage() {
       });
       const data = await response.json();
       setUploadedUrl(data.screenshot_url);
-      setSuccess("アップロードが完了しました。確認ボタンを押して提出を完了してください。");
+      setSuccess("アップロードが完了しました！最後に「提出する」ボタンを押してください。");
     } catch (err) {
       console.error(err);
       setError(err instanceof Error ? err.message : "アップロードに失敗しました。");
@@ -153,113 +154,80 @@ export default function UploadScreenshotPage() {
 
   return (
     <UserFlowGuard requiredStatus="ready_to_purchase">
-      <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-8 px-4 py-10 text-ringo-ink">
-        <header className="space-y-2">
-          <p className="text-sm font-semibold text-ringo-red">STEP.06 / 06</p>
-          <h1 className="font-logo text-4xl font-bold">スクリーンショットを提出する</h1>
-          <p className="text-sm text-ringo-ink/70">購入完了画面のスクショをアップロードし、AI + 管理者の確認を受けます。</p>
-        </header>
-
-        {error && <p className="rounded-2xl border border-ringo-red/40 bg-ringo-pink/10 px-4 py-3 text-sm text-ringo-red">{error}</p>}
-        {success && <p className="rounded-2xl border border-ringo-green/40 bg-ringo-green/10 px-4 py-3 text-sm text-ringo-green">{success}</p>}
-
-        <section className="grid gap-6 md:grid-cols-[1.2fr_0.8fr]">
-          <div className="rounded-3xl border border-ringo-purple/20 bg-white/80 p-6 shadow-ringo-card">
-            <h2 className="text-xl font-semibold text-ringo-red">提出ステップ</h2>
-            <ol className="mt-4 space-y-4 text-sm">
-              {["Amazonで商品の購入を完了し、注文番号が写るようにスクリーンショットを撮影", "下のフォームからスクリーンショットをアップロード", "確認ボタンを押してAI審査へ送信"].map((text, index) => (
-                <li key={text} className="flex gap-3">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-ringo-pink/10 text-sm font-semibold text-ringo-pink">{index + 1}</span>
-                  <p className="pt-1 leading-relaxed">{text}</p>
-                </li>
-              ))}
-            </ol>
-
-            <div className="mt-6 space-y-3 rounded-2xl bg-ringo-beige/40 p-4 text-sm">
-              <p className="font-semibold text-ringo-pink">注意事項</p>
-              <ul className="list-disc space-y-1 pl-5 text-ringo-ink/80">
-                <li>PNG または JPG 形式 / 10MB 以下</li>
-                <li>注文番号・商品名・金額が読めるように撮影</li>
-                <li>個人情報が写る場合はマスキングしてもOK</li>
-              </ul>
+      <FlowLayout 
+        currentStepIndex={3} 
+        title="報告する" 
+        subtitle="購入の証明として、注文完了画面のスクリーンショットを送ってください。"
+        showBack
+      >
+        <div className="space-y-6">
+          {/* Purchase Summary */}
+          {purchase && (
+            <div className="bg-ringo-bg/50 rounded-xl p-4 border border-ringo-pink-soft/50 flex items-center justify-between text-sm">
+              <div>
+                <span className="text-gray-500 text-xs block">購入した商品</span>
+                <span className="font-bold text-ringo-ink">{purchase.itemName}</span>
+              </div>
+              <div className="text-right">
+                <span className="text-gray-500 text-xs block">金額</span>
+                <span className="font-bold text-ringo-red">¥{purchase.price.toLocaleString()}</span>
+              </div>
             </div>
+          )}
 
-            <div className="mt-6 space-y-4">
-              <label className="block text-sm font-semibold text-ringo-ink/80">スクリーンショットファイル</label>
-              <input
+          {error && <p className="bg-ringo-red/10 text-ringo-red p-3 rounded-xl text-sm text-center">{error}</p>}
+          {success && <p className="bg-ringo-green/10 text-ringo-green p-3 rounded-xl text-sm text-center font-bold">{success}</p>}
+
+          <div className="space-y-4">
+            <div className="border-2 border-dashed border-ringo-pink-soft hover:border-ringo-rose bg-white/50 rounded-2xl p-6 transition-colors text-center cursor-pointer relative">
+               <input
                 type="file"
                 accept="image/png, image/jpeg"
                 onChange={handleFileChange}
-                className="w-full rounded-2xl border border-dashed border-ringo-pink/60 bg-white px-4 py-6 text-sm text-ringo-ink/80 shadow-inner"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               />
-
-              {previewUrl && (
-                <div className="relative h-80 w-full overflow-hidden rounded-2xl border border-ringo-ink/10 bg-ringo-slate-light/40">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={previewUrl} alt="スクリーンショットプレビュー" className="h-full w-full object-contain" />
+              {previewUrl ? (
+                 <div className="relative h-64 w-full">
+                    <img src={previewUrl} alt="プレビュー" className="h-full w-full object-contain rounded-lg" />
+                 </div>
+              ) : (
+                <div className="py-8">
+                  <div className="text-4xl mb-2">📷</div>
+                  <p className="font-bold text-ringo-rose">写真をアップロード</p>
+                  <p className="text-xs text-gray-400 mt-1">タップして画像を選択</p>
+                  <p className="text-[10px] text-gray-400 mt-2">※ 注文番号が写っていることを確認してね</p>
                 </div>
               )}
+            </div>
 
-              <div className="flex flex-col gap-3 pt-2 text-sm text-ringo-ink/70">
-                <button
+            <div className="flex flex-col gap-3">
+              {file && !uploadedUrl && (
+                 <button
                   type="button"
                   onClick={uploadFile}
-                  disabled={!file || isUploading}
-                  className="rounded-ringo-pill border border-ringo-pink bg-white py-3 font-semibold text-ringo-pink transition hover:bg-ringo-pink/10 disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={isUploading}
+                  className="btn-secondary w-full"
                 >
-                  {isUploading ? "アップロード中..." : file ? "このファイルをアップロード" : "アップロードするファイルを選択"}
+                  {isUploading ? "アップロード中..." : "1. 画像をアップロード"}
                 </button>
-                <button
-                  type="button"
-                  onClick={handleSubmit}
-                  disabled={!uploadedUrl || isSubmitting}
-                  className="btn-primary"
-                >
-                  {isSubmitting ? "送信中..." : "確認へ送信"}
-                </button>
-              </div>
+              )}
+              
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={!uploadedUrl || isSubmitting}
+                className={`w-full py-4 rounded-full font-bold shadow-lg transition-all ${
+                  uploadedUrl && !isSubmitting 
+                    ? "bg-gradient-to-r from-ringo-red to-ringo-rose text-white hover:scale-105" 
+                    : "bg-gray-300 text-white cursor-not-allowed"
+                }`}
+              >
+                {isSubmitting ? "送信中..." : "2. 確認へ送信する"}
+              </button>
             </div>
           </div>
-
-          <aside className="space-y-6">
-            <div className="rounded-3xl border border-ringo-purple/20 bg-white/80 p-6 shadow-ringo-card">
-              <h3 className="text-lg font-semibold text-ringo-red">購入したアイテム</h3>
-              {isLoading ? (
-                <p className="mt-4 text-sm text-ringo-ink/60">割り当てを読み込み中...</p>
-              ) : purchase ? (
-                <div className="mt-4 space-y-3 text-sm">
-                  <p>
-                    <span className="text-ringo-ink/70">匿名ユーザー:</span> {purchase.alias}
-                  </p>
-                  <p>
-                    <span className="text-ringo-ink/70">商品名:</span> {purchase.itemName}
-                  </p>
-                  <p>
-                    <span className="text-ringo-ink/70">価格:</span> ¥{purchase.price.toLocaleString()}
-                  </p>
-                  <Link href={purchase.wishlistUrl} target="_blank" rel="noreferrer" className="text-ringo-pink underline">
-                    Amazon欲しいものリストを開く
-                  </Link>
-                </div>
-              ) : (
-                <div className="mt-4 space-y-3 text-sm">
-                  <p className="text-ringo-ink/70">提出待ちの購入が見つかりません。購入ページで割り当てを取得してください。</p>
-                  <Link href="/purchase" className="text-ringo-pink underline">
-                    購入ページへ戻る
-                  </Link>
-                </div>
-              )}
-            </div>
-
-            <div className="rounded-3xl border border-ringo-purple/20 bg-white/80 p-6 shadow-ringo-card text-sm">
-              <h3 className="text-lg font-semibold text-ringo-red">AI審査について</h3>
-              <p className="mt-3 text-ringo-ink/80">
-                提出されたスクリーンショットは GPT-4o Vision が自動で内容をチェックし、注文番号・商品名・金額が整合しているか確認します。結果に応じて即時承認または管理者レビューへ回付されます。
-              </p>
-            </div>
-          </aside>
-        </section>
-      </main>
+        </div>
+      </FlowLayout>
     </UserFlowGuard>
   );
 }

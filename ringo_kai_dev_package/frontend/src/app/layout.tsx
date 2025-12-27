@@ -1,21 +1,21 @@
 import type { Metadata } from "next";
-import { Noto_Sans_JP, Zen_Maru_Gothic } from "next/font/google";
+import { M_PLUS_Rounded_1c, Zen_Maru_Gothic } from "next/font/google";
 
 import { Chatbot } from "@/components/Chatbot";
 import { AdminToolbar } from "@/components/AdminToolbar";
 import "./globals.css";
 
-const bodyFont = Noto_Sans_JP({
+const bodyFont = M_PLUS_Rounded_1c({
   subsets: ["latin"],
   variable: "--font-body",
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "700"],
   display: "swap",
 });
 
 const logoFont = Zen_Maru_Gothic({
   subsets: ["latin"],
   variable: "--font-logo",
-  weight: ["400", "500", "700"],
+  weight: ["400", "500", "700", "900"],
   display: "swap",
 });
 

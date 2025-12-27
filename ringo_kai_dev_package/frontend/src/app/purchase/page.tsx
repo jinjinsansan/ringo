@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { UserFlowGuard } from "@/components/UserFlowGuard";
+import { FlowLayout } from "@/components/FlowLayout";
 import { authorizedFetch } from "@/lib/status";
 import { useUser } from "@/lib/user";
 import type { ApiError } from "@/lib/status";
@@ -20,6 +22,7 @@ type PurchaseAssignment = WishlistAssignment & {
 };
 
 export default function PurchasePage() {
+  const router = useRouter();
   const { user, refresh } = useUser();
   const [assignment, setAssignment] = useState<PurchaseAssignment | null>(null);
   const [isUpdating, setUpdating] = useState(false);
@@ -108,79 +111,107 @@ export default function PurchasePage() {
 
   return (
     <UserFlowGuard requiredStatus="tutorial_completed">
-      <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-8 px-4 py-10 text-ringo-ink">
-        <header className="space-y-2">
-          <p className="text-sm font-semibold text-ringo-red">STEP.05 / 06</p>
-          <h1 className="font-logo text-4xl font-bold">誰かの欲しいものを購入する</h1>
-          <p className="text-sm text-ringo-ink/70">ランダムに割り当てられたリストから商品を購入し、スクリーンショットを提出します。</p>
-        </header>
+      <FlowLayout 
+        currentStepIndex={2} 
+        title="ギフトを贈る" 
+        subtitle="マッチングした誰かのリストから、素敵なプレゼントを贈りましょう。"
+        showBack
+      >
+        <div className="space-y-8">
+          {/* Assignment Card */}
+          <section className="bg-white/80 rounded-[2rem] p-6 shadow-ringo-card border border-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-ringo-pink-soft/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+            
+            <h2 className="text-lg font-bold text-ringo-rose mb-4 flex items-center gap-2 relative z-10">
+              <span className="text-2xl">🎯</span> あなたの購入担当
+            </h2>
 
-        <section className="grid gap-8 md:grid-cols-2">
-          <div className="rounded-3xl border border-ringo-purple/20 bg-white/80 p-6 shadow-ringo-card">
-            <h2 className="text-xl font-semibold text-ringo-red">購入対象</h2>
             {assignment ? (
-              <div className="mt-4 space-y-3 text-sm">
-                <p>
-                  <span className="text-ringo-ink/70">匿名ユーザー:</span> {assignment.alias}
-                </p>
-                <p>
-                  <span className="text-ringo-ink/70">商品名:</span> {assignment.itemName}
-                </p>
-                <p>
-                  <span className="text-ringo-ink/70">価格:</span> ¥{assignment.price.toLocaleString()}
-                </p>
-                <a
-                  href={assignment.link}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 text-ringo-pink underline"
-                >
-                  Amazonで詳細を見る
-                </a>
+              <div className="space-y-6 relative z-10">
+                <div className="bg-ringo-bg p-5 rounded-2xl border border-ringo-pink-soft/50">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 bg-ringo-purple rounded-full flex items-center justify-center text-xl">👤</div>
+                    <div>
+                      <p className="text-xs text-gray-500">お相手</p>
+                      <p className="font-bold text-ringo-ink">{assignment.alias} さん</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                     <p className="text-xs text-gray-500">希望商品</p>
+                     <p className="font-bold text-lg text-ringo-ink">{assignment.itemName}</p>
+                     <p className="text-sm text-ringo-red font-bold">¥{assignment.price.toLocaleString()}</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <a
+                    href={assignment.link}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn-primary w-full shadow-md text-center no-underline"
+                  >
+                    Amazonで商品を見る ↗
+                  </a>
+                  <p className="text-xs text-center text-gray-400">
+                    ※ Amazonのページが開きます。そのまま購入手続きへお進みください。
+                  </p>
+                </div>
+
+                <div className="pt-4 border-t border-ringo-pink-soft/30 text-center">
+                  <p className="text-sm font-bold text-ringo-ink mb-3">購入できましたか？</p>
+                  <Link href="/upload-screenshot" className="btn-secondary w-full block text-center">
+                     報告（スクショ提出）へ進む
+                  </Link>
+                </div>
               </div>
             ) : (
-              <p className="mt-4 text-sm text-ringo-ink/70">「購入対象を取得」ボタンでマッチングを開始します。</p>
+              <div className="text-center py-8">
+                <div className="text-6xl mb-4">🎁</div>
+                <p className="text-gray-600 mb-6">
+                  下のボタンを押すと、あなたがプレゼントを贈るお相手が決定します。
+                </p>
+                <button
+                  type="button"
+                  onClick={requestAssignment}
+                  className="btn-primary w-full shadow-lg"
+                  disabled={isUpdating || isLoadingAssignment}
+                >
+                  {isLoadingAssignment
+                    ? "読み込み中..."
+                    : isUpdating
+                      ? "マッチング中..."
+                      : "お相手を見つける！"}
+                </button>
+              </div>
             )}
-            <button
-              type="button"
-              onClick={requestAssignment}
-              className="mt-6 w-full rounded-ringo-pill border border-ringo-pink py-3 text-lg font-semibold text-ringo-pink transition hover:bg-ringo-pink/10 disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={isUpdating || isLoadingAssignment || Boolean(assignment)}
-            >
-              {isLoadingAssignment
-                ? "読み込み中..."
-                : assignment
-                  ? "購入対象は割り当て済み"
-                  : isUpdating
-                    ? "割り当て中..."
-                    : "購入対象を取得"}
-            </button>
-            {assignment && (
-              <Link href="/upload-screenshot" className="btn-primary mt-4 block text-center">
-                スクリーンショット提出ページへ進む
-              </Link>
-            )}
-          </div>
+          </section>
 
-          <div className="rounded-3xl border border-ringo-purple/20 bg-white/80 p-6 shadow-ringo-card text-sm">
-            <h2 className="text-xl font-semibold text-ringo-red">スクリーンショット提出の注意</h2>
-            <ul className="mt-3 list-disc space-y-2 pl-6">
-              <li>注文番号・商品名・金額が分かるように撮影してください。</li>
-              <li>PNG または JPG / 10MB 以下。</li>
-              <li>提出後は AI + 管理者が確認するまでお待ちください。</li>
+          {/* Guidelines */}
+          <section className="bg-ringo-purple/10 rounded-2xl p-5 border border-ringo-purple/20">
+            <h3 className="text-sm font-bold text-ringo-poison mb-2">💡 購入のヒント</h3>
+            <ul className="text-xs space-y-2 text-gray-600">
+              <li className="flex gap-2">
+                <span>・</span>
+                <span>必ず「ギフト設定」をして、匿名で送りましょう。</span>
+              </li>
+              <li className="flex gap-2">
+                <span>・</span>
+                <span>注文完了画面のスクリーンショットを忘れずに！</span>
+              </li>
+              <li className="flex gap-2">
+                <span>・</span>
+                <span>注文番号、商品名、合計金額が見えるように撮影してください。</span>
+              </li>
             </ul>
-            <p className="mt-4 text-xs text-ringo-ink/70">購入後は「スクリーンショット提出ページへ進む」ボタンから画像をアップロードしてください。</p>
-          </div>
-        </section>
+          </section>
 
-        {error && <p className="text-sm text-ringo-red">{error}</p>}
-
-        <section className="rounded-3xl border border-dashed border-ringo-purple/40 bg-white/70 p-6 text-xs text-ringo-ink/70">
-          <p>
-            現在のステータス: <strong>{user?.status ?? "-"}</strong>（`ready_to_purchase` になると購入義務中、`verifying` になると検証待ちです）
-          </p>
-        </section>
-      </main>
+          {error && (
+            <div className="bg-ringo-red/10 border border-ringo-red/20 rounded-xl p-4 text-sm text-ringo-red text-center">
+              {error}
+            </div>
+          )}
+        </div>
+      </FlowLayout>
     </UserFlowGuard>
   );
 }
