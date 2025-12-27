@@ -1,0 +1,27 @@
+name: Run RTP Batch
+
+on:
+  schedule:
+    - cron: "0 0,12 * * *"
+  workflow_dispatch:
+
+jobs:
+  run-batch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger RTP batch endpoint
+        env:
+          BACKEND_BASE_URL: ${{ secrets.BACKEND_BASE_URL }}
+          BACKEND_CRON_TOKEN: ${{ secrets.BACKEND_CRON_TOKEN }}
+        run: |
+          if [ -z "$BACKEND_BASE_URL" ]; then
+            echo "::error::BACKEND_BASE_URL secret is not configured"
+            exit 1
+          fi
+
+          if [ -n "$BACKEND_CRON_TOKEN" ]; then
+            curl -sS -X POST "$BACKEND_BASE_URL/api/batch/update-rtp" \
+              -H "X-Cron-Token: $BACKEND_CRON_TOKEN"
+          else
+            curl -sS -X POST "$BACKEND_BASE_URL/api/batch/update-rtp"
+          fi
