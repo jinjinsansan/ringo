@@ -3,8 +3,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import type { User } from "@supabase/supabase-js";
-
 import { createSupabaseClient } from "@/lib/supabase/client";
 
 export type UserStatus =
@@ -42,29 +40,37 @@ export const useUser = () => {
   const [isLoading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const mapUser = useCallback((authUser: User | null) => {
-    if (!authUser) return null;
-
-    const status = String(authUser.user_metadata?.status ?? "registered") as UserStatus;
-    return {
-      id: authUser.id,
-      email: authUser.email ?? "",
-      status: statusOrder.includes(status) ? status : "registered",
-    } satisfies RingoUser;
-  }, []);
-
   const fetchUser = useCallback(async () => {
     setLoading(true);
-    const { data, error: fetchError } = await supabase.auth.getUser();
-    if (fetchError) {
-      setError(fetchError.message);
+    const { data, error: authError } = await supabase.auth.getUser();
+    if (authError || !data.user) {
+      setError(authError?.message ?? "ユーザー情報を取得できませんでした");
       setUser(null);
+      setLoading(false);
+      return;
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("users")
+      .select("status, email")
+      .eq("id", data.user.id)
+      .single();
+
+    if (profileError) {
+      setError(profileError.message);
     } else {
       setError(null);
-      setUser(mapUser(data.user));
     }
+
+    const statusValue = profile?.status as UserStatus | undefined;
+    const safeStatus = statusValue && statusOrder.includes(statusValue) ? statusValue : "registered";
+    setUser({
+      id: data.user.id,
+      email: profile?.email ?? data.user.email ?? "",
+      status: safeStatus,
+    });
     setLoading(false);
-  }, [mapUser, supabase]);
+  }, [supabase]);
 
   useEffect(() => {
     fetchUser();

@@ -5,12 +5,15 @@ import { useRouter } from "next/navigation";
 
 import { UserFlowGuard } from "@/components/UserFlowGuard";
 import { createSupabaseClient } from "@/lib/supabase/client";
+import { updateUserStatus } from "@/lib/status";
+import { useUser } from "@/lib/user";
 
 const validateAmazonUrl = (url: string) => /amazon\.(co\.jp|com)/i.test(url);
 
 export default function RegisterWishlistPage() {
   const router = useRouter();
   const supabase = useMemo(() => createSupabaseClient(), []);
+  const { user, refresh } = useUser();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setSubmitting] = useState(false);
@@ -28,10 +31,19 @@ export default function RegisterWishlistPage() {
       return;
     }
 
+    if (!user) {
+      setError("ユーザー情報の取得に失敗しました。ログインを確認してください。");
+      return;
+    }
+
     try {
       setSubmitting(true);
-      const { error: updateError } = await supabase.auth.updateUser({ data: { status: "ready_to_draw" } });
+      const { error: updateError } = await updateUserStatus(supabase, user.id, "ready_to_draw", {
+        wishlist_url: url,
+        wishlist_registered_at: new Date().toISOString(),
+      });
       if (updateError) throw updateError;
+      await refresh();
       setSuccess("登録しました！ りんご抽選ページへ移動します。");
       setTimeout(() => router.push("/draw"), 1500);
     } catch (err) {

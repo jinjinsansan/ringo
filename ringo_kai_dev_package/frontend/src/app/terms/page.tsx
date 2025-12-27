@@ -5,23 +5,30 @@ import { useRouter } from "next/navigation";
 
 import { UserFlowGuard } from "@/components/UserFlowGuard";
 import { createSupabaseClient } from "@/lib/supabase/client";
+import { updateUserStatus } from "@/lib/status";
 import { useUser } from "@/lib/user";
 
 export default function TermsPage() {
   const router = useRouter();
   const supabase = useMemo(() => createSupabaseClient(), []);
-  const { user } = useUser();
+  const { user, refresh } = useUser();
   const [isSubmitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleAgree = async () => {
+    if (!user) {
+      setError("ユーザー情報の取得に失敗しました。ログインし直してください。");
+      return;
+    }
+
     try {
       setSubmitting(true);
       setError(null);
-      const { error: updateError } = await supabase.auth.updateUser({
-        data: { status: "terms_agreed" },
+      const { error: updateError } = await updateUserStatus(supabase, user.id, "terms_agreed", {
+        terms_agreed_at: new Date().toISOString(),
       });
       if (updateError) throw updateError;
+      await refresh();
       router.push("/tutorial");
     } catch (err) {
       console.error(err);

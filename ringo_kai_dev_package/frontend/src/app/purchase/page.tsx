@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { UserFlowGuard } from "@/components/UserFlowGuard";
 import { createSupabaseClient } from "@/lib/supabase/client";
+import { updateUserStatus } from "@/lib/status";
 import { useUser } from "@/lib/user";
 
 type WishlistAssignment = {
@@ -32,18 +33,24 @@ const mockAssignments: WishlistAssignment[] = [
 export default function PurchasePage() {
   const router = useRouter();
   const supabase = useMemo(() => createSupabaseClient(), []);
-  const { user } = useUser();
+  const { user, refresh } = useUser();
   const [assignment, setAssignment] = useState<WishlistAssignment | null>(null);
   const [isUpdating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const requestAssignment = async () => {
+    if (!user) {
+      setError("ユーザー情報が見つかりません。ログインし直してください。");
+      return;
+    }
+
     setAssignment(mockAssignments[Math.floor(Math.random() * mockAssignments.length)]);
     try {
       setUpdating(true);
       setError(null);
-      const { error: updateError } = await supabase.auth.updateUser({ data: { status: "ready_to_purchase" } });
+      const { error: updateError } = await updateUserStatus(supabase, user.id, "ready_to_purchase");
       if (updateError) throw updateError;
+      await refresh();
     } catch (err) {
       console.error(err);
       setError("ステータス更新に失敗しました。時間を置いて再度お試しください。");
@@ -53,11 +60,17 @@ export default function PurchasePage() {
   };
 
   const markScreenshotSubmitted = async () => {
+    if (!user) {
+      setError("ユーザー情報が見つかりません。ログインし直してください。");
+      return;
+    }
+
     try {
       setUpdating(true);
       setError(null);
-      const { error: updateError } = await supabase.auth.updateUser({ data: { status: "verifying" } });
+      const { error: updateError } = await updateUserStatus(supabase, user.id, "verifying");
       if (updateError) throw updateError;
+      await refresh();
       router.push("/verification-pending");
     } catch (err) {
       console.error(err);

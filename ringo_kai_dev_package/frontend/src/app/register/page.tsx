@@ -66,14 +66,11 @@ export default function RegisterPage() {
     }
 
     setSubmitting(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/login`,
-        data: {
-          status: "registered",
-        },
       },
     });
     setSubmitting(false);
@@ -81,6 +78,28 @@ export default function RegisterPage() {
     if (error) {
       setServerError(error.message);
       return;
+    }
+
+    if (data.user) {
+      const { error: profileError } = await supabase.from("users").upsert(
+        {
+          id: data.user.id,
+          email,
+          status: "registered",
+          terms_agreed_at: null,
+          tutorial_completed_at: null,
+          wishlist_url: null,
+          wishlist_registered_at: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "id" }
+      );
+
+      if (profileError) {
+        setServerError("ユーザープロフィールの作成に失敗しました: " + profileError.message);
+        return;
+      }
     }
 
     setSuccessMessage("登録が完了しました。ログインしてください。数秒後にログインページへ移動します。");
