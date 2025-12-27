@@ -19,6 +19,7 @@ export type RingoUser = {
   id: string;
   email: string;
   status: UserStatus;
+  isAdmin: boolean;
 };
 
 export const statusOrder: UserStatus[] = [
@@ -31,6 +32,11 @@ export const statusOrder: UserStatus[] = [
   "ready_to_draw",
   "active",
 ];
+
+const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? "")
+  .split(",")
+  .map((email) => email.trim().toLowerCase())
+  .filter(Boolean);
 
 const defaultUser: RingoUser | null = null;
 
@@ -64,10 +70,13 @@ export const useUser = () => {
 
     const statusValue = profile?.status as UserStatus | undefined;
     const safeStatus = statusValue && statusOrder.includes(statusValue) ? statusValue : "registered";
+    const email = profile?.email ?? data.user.email ?? "";
+    const normalizedEmail = email.toLowerCase();
     setUser({
       id: data.user.id,
-      email: profile?.email ?? data.user.email ?? "",
+      email,
       status: safeStatus,
+      isAdmin: normalizedEmail ? adminEmails.includes(normalizedEmail) : false,
     });
     setLoading(false);
   }, [supabase]);

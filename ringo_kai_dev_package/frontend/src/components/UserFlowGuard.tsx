@@ -32,6 +32,7 @@ export function UserFlowGuard({ requiredStatus, children }: Props) {
 
   const canAccess = useMemo(() => {
     if (!user) return false;
+    if (user.isAdmin) return true;
     const current = statusOrder.indexOf(user.status);
     const required = statusOrder.indexOf(requiredStatus);
     if (current === -1 || required === -1) return false;
