@@ -11,8 +11,8 @@ const statusRedirectMap: Record<UserStatus, string> = {
   tutorial_completed: "/purchase",
   ready_to_purchase: "/purchase",
   verifying: "/verification-pending",
+  first_purchase_completed: "/register-wishlist",
   ready_to_draw: "/draw",
-  first_purchase_completed: "/draw",
   active: "/dashboard",
 };
 

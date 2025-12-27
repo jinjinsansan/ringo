@@ -29,8 +29,8 @@ export const statusOrder: UserStatus[] = [
   "tutorial_completed",
   "ready_to_purchase",
   "verifying",
-  "ready_to_draw",
   "first_purchase_completed",
+  "ready_to_draw",
   "active",
 ];
 
