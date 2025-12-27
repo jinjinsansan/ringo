@@ -6,6 +6,7 @@ const config: Config = {
     extend: {
       colors: {
         "ringo-pink": "#FFB6D9",
+        "ringo-rose": "#FF4B8F",
         "ringo-pink-soft": "#FFC0CB",
         "ringo-purple": "#E6D4F0",
         "ringo-red": "#E63946",

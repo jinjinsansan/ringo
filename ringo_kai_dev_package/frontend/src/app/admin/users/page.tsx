@@ -228,11 +228,7 @@ export default function AdminUsersPage() {
             className="flex-1 rounded-2xl border border-ringo-purple/30 bg-ringo-bg/40 px-4 py-3 text-sm outline-none focus:border-ringo-pink focus:ring-2 focus:ring-ringo-pink/30"
             disabled={isLoading}
           />
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="rounded-ringo-pill bg-ringo-pink px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-ringo-pink/40 transition hover:-translate-y-0.5"
-          >
+          <button type="submit" disabled={isLoading} className="btn-primary px-6 text-sm">
             {isLoading ? "取得中..." : "適用"}
           </button>
         </form>
@@ -261,10 +257,7 @@ export default function AdminUsersPage() {
             ))}
           </select>
           <div className="flex gap-3">
-            <button
-              type="submit"
-              className="flex-1 rounded-ringo-pill bg-ringo-pink px-4 py-3 text-sm font-semibold text-white shadow-ringo-pink/40"
-            >
+            <button type="submit" className="btn-primary flex-1 text-sm">
               検索
             </button>
             <button
@@ -405,7 +398,7 @@ export default function AdminUsersPage() {
                             type="button"
                             disabled={savingUserId === user.id}
                             onClick={() => handleSave(user)}
-                            className="rounded-ringo-pill bg-ringo-pink px-3 py-1 font-semibold text-white disabled:opacity-50"
+                            className="btn-primary px-3 py-1 text-xs"
                           >
                             {savingUserId === user.id ? "保存中..." : "保存"}
                           </button>

@@ -65,12 +65,7 @@ export default function TermsPage() {
         ) : (
           <div className="space-y-4 rounded-3xl bg-white/80 p-6 text-center shadow-ringo-card">
             <p className="text-sm text-ringo-ink/70">同意すると次のステップ（使い方）へ進みます。</p>
-            <button
-              type="button"
-              onClick={handleAgree}
-              className="w-full rounded-ringo-pill bg-ringo-pink py-3 text-lg font-semibold text-white shadow-lg shadow-ringo-pink/40 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={isSubmitting}
-            >
+            <button type="button" onClick={handleAgree} className="btn-primary w-full" disabled={isSubmitting}>
               {isSubmitting ? "更新中..." : "利用規約に同意する"}
             </button>
             {error && <p className="text-sm text-ringo-red">{error}</p>}

@@ -280,12 +280,7 @@ export default function DrawPage() {
                 </div>
               ))}
             </div>
-            <button
-              type="button"
-              onClick={handleDraw}
-              className="mt-6 w-full rounded-ringo-pill bg-ringo-pink py-3 text-lg font-semibold text-white shadow-lg shadow-ringo-pink/40 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={isLoading}
-            >
+            <button type="button" onClick={handleDraw} className="btn-primary mt-6 w-full" disabled={isLoading}>
               {isLoading ? "抽選中..." : "今すぐりんごを引く"}
             </button>
             {error && <p className="mt-3 text-sm text-ringo-red">{error}</p>}
@@ -381,7 +376,7 @@ export default function DrawPage() {
                 type="button"
                 onClick={handleConsume}
                 disabled={appleResult.purchase_available <= 0}
-                className="mt-4 w-full rounded-ringo-pill bg-ringo-pink py-3 font-semibold text-white shadow-lg shadow-ringo-pink/40 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                className="btn-primary mt-4 w-full"
               >
                 チケットを使用する
               </button>
@@ -418,10 +413,7 @@ export default function DrawPage() {
           <p className="mt-2 text-ringo-ink/80">
             友達を招待すると紹介人数に応じてシルバー以上のりんごが出やすくなります。目標ハードルをクリアして特典を解放しましょう。
           </p>
-          <Link
-            href="/friends"
-            className="mt-4 inline-flex items-center justify-center rounded-ringo-pill bg-ringo-pink px-6 py-3 font-semibold text-white shadow-lg shadow-ringo-pink/40 transition hover:-translate-y-0.5"
-          >
+          <Link href="/friends" className="btn-primary mt-4 inline-flex items-center justify-center px-6">
             友達紹介ページへ進む
           </Link>
         </section>

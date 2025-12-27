@@ -122,11 +122,7 @@ export default function AdminDashboardPage() {
             className="flex-1 rounded-2xl border border-ringo-purple/30 bg-ringo-bg/40 px-4 py-3 text-sm outline-none focus:border-ringo-pink focus:ring-2 focus:ring-ringo-pink/30"
             disabled={isLoading}
           />
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="rounded-ringo-pill bg-ringo-pink px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-ringo-pink/40 transition hover:-translate-y-0.5"
-          >
+          <button type="submit" disabled={isLoading} className="btn-primary px-6 text-sm">
             {isLoading ? "更新中..." : "更新"}
           </button>
         </form>

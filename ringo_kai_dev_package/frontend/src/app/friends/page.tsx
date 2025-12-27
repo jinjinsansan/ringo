@@ -189,11 +189,7 @@ export default function FriendsPage() {
               <p className="text-2xl font-bold text-ringo-red">{summary.referral_code}</p>
             </div>
             <div className="mt-4 space-y-3 text-sm">
-              <button
-                type="button"
-                onClick={handleCopy}
-                className="w-full rounded-ringo-pill bg-ringo-pink py-3 font-semibold text-white shadow-lg shadow-ringo-pink/40 transition hover:-translate-y-0.5"
-              >
+              <button type="button" onClick={handleCopy} className="btn-primary w-full text-base">
                 コピーして共有する
               </button>
               <p className="text-center text-xs text-ringo-ink/70 break-words">{referralLink}</p>

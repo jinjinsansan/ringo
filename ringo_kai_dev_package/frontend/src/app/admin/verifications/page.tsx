@@ -110,10 +110,7 @@ export default function AdminVerificationsPage() {
             placeholder="管理者用トークンを入力"
             className="flex-1 rounded-2xl border border-ringo-purple/30 bg-ringo-bg/40 px-4 py-3 text-sm outline-none focus:border-ringo-pink focus:ring-2 focus:ring-ringo-pink/30"
           />
-          <button
-            type="submit"
-            className="rounded-ringo-pill bg-ringo-pink px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-ringo-pink/40 transition hover:-translate-y-0.5"
-          >
+          <button type="submit" className="btn-primary px-6 text-sm">
             認証 & 再読み込み
           </button>
         </form>
@@ -189,7 +186,7 @@ export default function AdminVerificationsPage() {
                       <div className="flex flex-col gap-2 text-xs">
                         <button
                           type="button"
-                          className="rounded-ringo-pill bg-ringo-pink/90 px-3 py-1 font-semibold text-white"
+                          className="btn-primary px-3 py-1 text-xs"
                           onClick={() => handleDecision(row.id, "approved")}
                         >
                           承認

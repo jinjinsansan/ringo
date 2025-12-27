@@ -146,10 +146,7 @@ export default function DashboardPage() {
                   )}
                   <p className="text-xs text-ringo-ink/50">初回登録後は変更できません。</p>
                   {!data?.user?.wishlist_url && (
-                    <Link
-                      href="/register-wishlist"
-                      className="inline-flex w-full items-center justify-center rounded-ringo-pill bg-ringo-pink py-2 text-sm font-semibold text-white shadow-lg shadow-ringo-pink/40"
-                    >
+                    <Link href="/register-wishlist" className="btn-primary inline-flex w-full items-center justify-center text-sm">
                       欲しいものリストを登録
                     </Link>
                   )}

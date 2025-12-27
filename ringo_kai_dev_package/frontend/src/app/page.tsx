@@ -50,10 +50,7 @@ export default function Home() {
               ))}
             </div>
             <div className="flex flex-col gap-4 sm:flex-row">
-              <Link
-                href="/register"
-                className="rounded-ringo-pill bg-ringo-pink px-8 py-3 text-center text-lg font-semibold text-white shadow-lg shadow-ringo-pink/40 transition hover:-translate-y-0.5 hover:shadow-xl"
-              >
+                <Link href="/register" className="btn-primary inline-flex justify-center px-8">
                 新規登録
               </Link>
               <Link

@@ -80,11 +80,7 @@ function LoginContent() {
             <div className="rounded-2xl bg-ringo-red/10 px-4 py-3 text-sm text-ringo-red">{serverError}</div>
           )}
 
-          <button
-            type="submit"
-            className="w-full rounded-ringo-pill bg-ringo-pink py-3 text-lg font-semibold text-white shadow-lg shadow-ringo-pink/40 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={isSubmitting}
-          >
+          <button type="submit" className="btn-primary w-full" disabled={isSubmitting}>
             {isSubmitting ? "ログイン中..." : "ログイン"}
           </button>
         </form>

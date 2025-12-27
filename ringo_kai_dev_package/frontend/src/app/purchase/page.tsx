@@ -156,10 +156,7 @@ export default function PurchasePage() {
                     : "購入対象を取得"}
             </button>
             {assignment && (
-              <Link
-                href="/upload-screenshot"
-                className="mt-4 block rounded-ringo-pill bg-ringo-pink py-3 text-center text-lg font-semibold text-white shadow-lg shadow-ringo-pink/40 transition hover:-translate-y-0.5"
-              >
+              <Link href="/upload-screenshot" className="btn-primary mt-4 block text-center">
                 スクリーンショット提出ページへ進む
               </Link>
             )}

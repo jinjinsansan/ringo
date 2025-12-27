@@ -217,11 +217,7 @@ function RegisterContent() {
             <div className="rounded-2xl bg-ringo-gold/10 px-4 py-3 text-sm text-ringo-gold">{successMessage}</div>
           )}
 
-          <button
-            type="submit"
-            className="w-full rounded-ringo-pill bg-gradient-to-r from-ringo-pink to-ringo-red py-3 text-lg font-semibold text-white shadow-lg shadow-ringo-pink/40 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={isSubmitting}
-          >
+          <button type="submit" className="btn-primary w-full" disabled={isSubmitting}>
             {isSubmitting ? "登録処理中..." : "登録する"}
           </button>
         </form>

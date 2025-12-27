@@ -213,7 +213,7 @@ export default function UploadScreenshotPage() {
                   type="button"
                   onClick={handleSubmit}
                   disabled={!uploadedUrl || isSubmitting}
-                  className="rounded-ringo-pill bg-ringo-pink py-3 font-semibold text-white shadow-lg shadow-ringo-pink/40 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="btn-primary"
                 >
                   {isSubmitting ? "送信中..." : "確認へ送信"}
                 </button>

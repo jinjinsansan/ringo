@@ -68,7 +68,7 @@ export default function TutorialPage() {
           <ul className="mt-3 space-y-3">
             {checklist.map((item) => (
               <li key={item} className="flex items-start gap-3">
-                <span className="mt-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-ringo-pink text-xs text-white">✓</span>
+                <span className="mt-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-ringo-rose text-xs text-white">✓</span>
                 <p>{item}</p>
               </li>
             ))}
@@ -87,12 +87,7 @@ export default function TutorialPage() {
         ) : (
           <div className="space-y-4 rounded-3xl bg-white/80 p-6 text-center shadow-ringo-card">
             <p className="text-sm text-ringo-ink/70">チェックを終えたら下のボタンで次のステップへ。</p>
-            <button
-              type="button"
-              onClick={handleComplete}
-              className="w-full rounded-ringo-pill bg-ringo-pink py-3 text-lg font-semibold text-white shadow-lg shadow-ringo-pink/40 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={isSubmitting}
-            >
+            <button type="button" onClick={handleComplete} className="btn-primary w-full" disabled={isSubmitting}>
               {isSubmitting ? "更新中..." : "理解しました"}
             </button>
             {error && <p className="text-sm text-ringo-red">{error}</p>}

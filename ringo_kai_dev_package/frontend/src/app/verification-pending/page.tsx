@@ -53,12 +53,7 @@ export default function VerificationPendingPage() {
 
         <div className="rounded-3xl border border-dashed border-ringo-purple/40 bg-white/70 p-6 text-sm text-ringo-ink/70">
           <p>モック環境では下のボタンで承認済み状態に進めます。</p>
-          <button
-            type="button"
-            onClick={markApproved}
-            className="mt-4 w-full rounded-ringo-pill bg-ringo-pink py-3 text-lg font-semibold text-white shadow-lg shadow-ringo-pink/40 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={isUpdating}
-          >
+          <button type="button" onClick={markApproved} className="btn-primary mt-4 w-full" disabled={isUpdating}>
             {isUpdating ? "更新中..." : "承認されたとして進む"}
           </button>
           {error && <p className="mt-2 text-sm text-ringo-red">{error}</p>}

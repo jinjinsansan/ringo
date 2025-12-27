@@ -87,11 +87,7 @@ export default function RegisterWishlistPage() {
           <p className="text-xs text-ringo-ink/60">
             ※ 公開設定のリストで、3000円〜4000円の商品を登録してください。登録後の変更はできません。
           </p>
-          <button
-            type="submit"
-            className="w-full rounded-ringo-pill bg-ringo-pink py-3 text-lg font-semibold text-white shadow-lg shadow-ringo-pink/40 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={isSubmitting}
-          >
+          <button type="submit" className="btn-primary w-full" disabled={isSubmitting}>
             {isSubmitting ? "登録中..." : "リストを登録"}
           </button>
         </form>
