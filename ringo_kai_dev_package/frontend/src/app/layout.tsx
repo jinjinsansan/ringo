@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Noto_Sans_JP, Zen_Maru_Gothic } from "next/font/google";
+
+import { Chatbot } from "@/components/Chatbot";
 import "./globals.css";
 
 const bodyFont = Noto_Sans_JP({
@@ -29,10 +31,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja">
-      <body
-        className={`${bodyFont.variable} ${logoFont.variable} antialiased bg-ringo-bg text-ringo-ink`}
-      >
+      <body className={`${bodyFont.variable} ${logoFont.variable} antialiased bg-ringo-bg text-ringo-ink`}>
         {children}
+        <Chatbot />
       </body>
     </html>
   );
