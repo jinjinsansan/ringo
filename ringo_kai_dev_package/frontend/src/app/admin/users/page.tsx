@@ -202,11 +202,6 @@ export default function AdminUsersPage() {
     }
   };
 
-  const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setSearchQuery(searchTerm.trim());
-  };
-
   return (
     <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-4 py-10 text-ringo-ink">
       <header className="space-y-2">

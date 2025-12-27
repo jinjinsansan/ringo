@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, Suspense, useMemo, useState } from "react";
 
 import { createSupabaseClient } from "@/lib/supabase/client";
 
@@ -15,7 +15,7 @@ type FormErrors = {
 
 const defaultErrors: FormErrors = {};
 
-export default function RegisterPage() {
+function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = useMemo(() => createSupabaseClient(), []);
@@ -231,5 +231,13 @@ export default function RegisterPage() {
         </p>
       </div>
     </main>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-ringo-bg" />}> 
+      <RegisterContent />
+    </Suspense>
   );
 }
