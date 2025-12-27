@@ -172,7 +172,7 @@ async def require_admin(x_admin_token: Annotated[str | None, Header(alias="X-Adm
 
 
 class StatusUpdateRequest(BaseModel):
-    status: str = Field(regex=r"^[a-z_]+$", description="Next status key")
+    status: str = Field(pattern=r"^[a-z_]+$", description="Next status key")
     metadata: dict[str, str | int | float | None] | None = None
 
 
