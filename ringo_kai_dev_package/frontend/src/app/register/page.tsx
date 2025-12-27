@@ -99,7 +99,11 @@ function RegisterContent() {
       );
 
       if (profileError) {
-        setServerError("ユーザープロフィールの作成に失敗しました: " + profileError.message);
+        if (profileError.code === "23505" || profileError.message?.includes("duplicate key value")) {
+          setServerError("このメールアドレスは既に登録されています。ログインページからサインインしてください。");
+        } else {
+          setServerError("ユーザープロフィールの作成に失敗しました: " + profileError.message);
+        }
         return;
       }
 
@@ -215,7 +219,7 @@ function RegisterContent() {
 
           <button
             type="submit"
-            className="w-full rounded-ringo-pill bg-ringo-pink py-3 text-lg font-semibold text-white shadow-lg shadow-ringo-pink/40 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-ringo-pill bg-gradient-to-r from-ringo-pink to-ringo-red py-3 text-lg font-semibold text-white shadow-lg shadow-ringo-pink/40 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
             disabled={isSubmitting}
           >
             {isSubmitting ? "登録処理中..." : "登録する"}
