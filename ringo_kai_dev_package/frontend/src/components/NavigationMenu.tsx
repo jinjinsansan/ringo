@@ -244,7 +244,8 @@ export function NavigationMenu() {
     return getDefaultNextAction(user.status);
   }, [dashboard?.stats, user, userStatusIndex]);
 
-  const showAdminEntry = (user?.isAdmin ?? false) || hasAdminAccess;
+  // Only show admin panel for goldbenchan@gmail.com
+  const showAdminEntry = user?.email === 'goldbenchan@gmail.com';
 
   const navItems = useMemo(
     () => [
