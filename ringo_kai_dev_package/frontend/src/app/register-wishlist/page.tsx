@@ -8,7 +8,7 @@ import { FlowLayout } from "@/components/FlowLayout";
 import { authorizedFetch } from "@/lib/status";
 import { useUser } from "@/lib/user";
 
-const validateAmazonUrl = (url: string) => /amazon\.(co\.jp|com)/i.test(url);
+const validateAmazonUrl = (url: string) => /amazon\.(co\.jp|com|jp)/i.test(url);
 
 export default function RegisterWishlistPage() {
   const router = useRouter();
