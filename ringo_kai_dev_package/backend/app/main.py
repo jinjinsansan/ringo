@@ -422,7 +422,7 @@ async def save_screenshot(file: UploadFile, user_id: str, purchase_id: int) -> s
         contents,
         {
             "content-type": content_type,
-            "upsert": True,
+            "x-upsert": "true",
         },
     )
     public_url = supabase.storage.from_(SCREENSHOT_BUCKET).get_public_url(object_path)
