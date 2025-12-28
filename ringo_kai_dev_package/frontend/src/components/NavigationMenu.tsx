@@ -271,19 +271,19 @@ export function NavigationMenu() {
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="flex h-12 w-12 items-center justify-center rounded-full border border-ringo-pink-soft/70 bg-white shadow-lg shadow-ringo-pink/20 transition hover:-translate-y-0.5 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-ringo-rose"
+        className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-ringo-pink-soft/70 bg-white shadow-lg shadow-ringo-pink/20 transition hover:-translate-y-0.5 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-ringo-rose"
         aria-label={isOpen ? "メニューを閉じる" : "メニューを開く"}
         aria-expanded={isOpen}
         aria-controls="navigation-menu"
         type="button"
       >
-        <span className="flex flex-col items-center justify-center gap-1.5" aria-hidden="true">
+        <span className="flex flex-col items-center justify-center gap-[5px]" aria-hidden="true">
           <span
-            className={`block h-[2px] w-7 rounded-full bg-ringo-ink transition-transform duration-300 ${isOpen ? "translate-y-2 rotate-45" : ""}`}
+            className={`block h-[3px] w-6 rounded-sm bg-ringo-ink transition-all duration-300 ${isOpen ? "translate-y-[8px] rotate-45" : ""}`}
           />
-          <span className={`block h-[2px] w-7 rounded-full bg-ringo-ink transition-opacity duration-300 ${isOpen ? "opacity-0" : ""}`} />
+          <span className={`block h-[3px] w-6 rounded-sm bg-ringo-ink transition-all duration-300 ${isOpen ? "opacity-0" : ""}`} />
           <span
-            className={`block h-[2px] w-7 rounded-full bg-ringo-ink transition-transform duration-300 ${isOpen ? "-translate-y-2 -rotate-45" : ""}`}
+            className={`block h-[3px] w-6 rounded-sm bg-ringo-ink transition-all duration-300 ${isOpen ? "-translate-y-[8px] -rotate-45" : ""}`}
           />
         </span>
       </button>
