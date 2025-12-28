@@ -84,40 +84,61 @@ export function FlowLayout({ currentStepIndex, children, title, subtitle, onBack
                   const canAccess = isStepAccessible(idx);
                   
                   // Wrap in Link only if accessible or completed
-                  const Wrapper = canAccess ? Link : "div";
-                  const wrapperProps = canAccess ? { href: step.path } : {};
+                  const isLink = canAccess;
+                  const wrapperProps = isLink ? { href: step.path } : {};
+
+                  if (isLink) {
+                    return (
+                      <Link 
+                        key={idx} 
+                        href={step.path}
+                        className="flex flex-col items-center gap-1 group cursor-pointer"
+                      >
+                        <div 
+                          className={`
+                            w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold border-2 transition-all duration-300
+                            ${isActive 
+                              ? "bg-ringo-rose border-ringo-rose text-white scale-110 shadow-lg shadow-ringo-rose/30" 
+                              : isCompleted 
+                                ? "bg-ringo-pink text-white border-ringo-pink group-hover:bg-ringo-rose group-hover:border-ringo-rose" 
+                                : "bg-white border-ringo-pink-soft text-ringo-pink group-hover:border-ringo-pink"
+                            }
+                          `}
+                        >
+                          {isCompleted ? "✓" : idx + 1}
+                        </div>
+                        <span className={`
+                          text-[10px] sm:text-xs font-medium transition-colors hidden sm:block
+                          ${isActive ? "text-ringo-rose" : ""}
+                          ${isCompleted ? "text-ringo-pink group-hover:text-ringo-rose" : ""}
+                          ${!isActive && !isCompleted ? "text-ringo-pink/70 group-hover:text-ringo-pink" : ""}
+                        `}>
+                          {step.label}
+                        </span>
+                      </Link>
+                    );
+                  }
 
                   return (
-                    <Wrapper 
+                    <div 
                       key={idx} 
-                      {...wrapperProps}
-                      className={`flex flex-col items-center gap-1 group ${canAccess ? "cursor-pointer" : "cursor-not-allowed opacity-60"}`}
+                      className="flex flex-col items-center gap-1 group cursor-not-allowed opacity-60"
                     >
                       <div 
                         className={`
                           w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold border-2 transition-all duration-300
                           ${isActive 
                             ? "bg-ringo-rose border-ringo-rose text-white scale-110 shadow-lg shadow-ringo-rose/30" 
-                            : isCompleted 
-                              ? "bg-ringo-pink text-white border-ringo-pink group-hover:bg-ringo-rose group-hover:border-ringo-rose" 
-                              : canAccess
-                                ? "bg-white border-ringo-pink-soft text-ringo-pink group-hover:border-ringo-pink"
-                                : "bg-white border-gray-300 text-gray-400"
+                            : "bg-white border-gray-300 text-gray-400"
                           }
                         `}
                       >
                         {isCompleted ? "✓" : idx + 1}
                       </div>
-                      <span className={`
-                        text-[10px] sm:text-xs font-medium transition-colors hidden sm:block
-                        ${isActive ? "text-ringo-rose" : ""}
-                        ${isCompleted ? "text-ringo-pink group-hover:text-ringo-rose" : ""}
-                        ${!isActive && !isCompleted && canAccess ? "text-ringo-pink/70 group-hover:text-ringo-pink" : ""}
-                        ${!canAccess ? "text-gray-400" : ""}
-                      `}>
+                      <span className="text-[10px] sm:text-xs font-medium transition-colors hidden sm:block text-gray-400">
                         {step.label}
                       </span>
-                    </Wrapper>
+                    </div>
                   );
                 })}
              </div>
