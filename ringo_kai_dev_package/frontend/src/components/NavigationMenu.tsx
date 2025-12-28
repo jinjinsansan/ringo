@@ -308,7 +308,7 @@ export function NavigationMenu() {
       <div 
         id="navigation-menu"
         ref={menuRef}
-        className={`fixed top-0 right-0 h-full w-64 bg-white/95 backdrop-blur-md shadow-2xl transform transition-transform duration-300 ease-in-out border-l border-ringo-pink-soft/30 pt-20 px-6 z-[9999] ${
+        className={`fixed top-0 right-0 h-full w-64 bg-white/95 backdrop-blur-md shadow-2xl transform transition-transform duration-300 ease-in-out border-l border-ringo-pink-soft/30 z-[9999] ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
         role="dialog"
@@ -317,7 +317,7 @@ export function NavigationMenu() {
         aria-hidden={!isOpen}
       >
         {isOpen ? (
-          <div className="space-y-6">
+          <div className="h-full overflow-y-auto pt-20 px-6 pb-6 space-y-6 custom-scrollbar">
             <div>
               <div className="text-xs text-gray-400">ログイン中</div>
               <div className="text-sm font-bold text-ringo-ink break-all">
