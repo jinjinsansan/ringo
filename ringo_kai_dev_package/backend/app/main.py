@@ -83,6 +83,15 @@ WISHLIST_ALLOWED_HOSTS = {
 WISHLIST_PATH_KEYWORDS = ("wishlist", "registry", "hz/wishlist", "gp/registry")
 TITLE_PATTERN = re.compile(r"<title>(.*?)</title>", re.IGNORECASE | re.DOTALL)
 PRICE_PATTERN = re.compile(r"[¥￥]\s?([0-9][0-9,]{2,})")
+WISHLIST_ASIN_PATTERN = re.compile(r"href=\"/dp/([A-Z0-9]{10})(?:/|\?)", re.IGNORECASE)
+WISHLIST_ASIN_TITLE_PATTERN = re.compile(
+    r"href=\"/dp/([A-Z0-9]{10})(?:/|\?)[^\"]*\"[^>]*title=\"([^\"]+)\"",
+    re.IGNORECASE,
+)
+WISHLIST_ITEM_PRICE_PATTERN = re.compile(
+    r"id=\"itemPrice_[^\"]+\"[\s\S]{0,1200}?<span class=\"a-offscreen\">[¥￥]\s*([0-9][0-9,]{2,})",
+    re.IGNORECASE,
+)
 DEFAULT_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 REFERRAL_THRESHOLDS = [3, 5, 10, 20, 30]
 REFERRAL_CODE_ALPHABET = "".join(ch for ch in string.ascii_uppercase if ch not in {"I", "O"}) + "23456789"
@@ -1221,7 +1230,14 @@ def extract_title(html: str) -> str | None:
 
 async def fetch_wishlist_snapshot(url: str) -> dict[str, str | int | None]:
     try:
-        async with httpx.AsyncClient(timeout=10.0, headers={"User-Agent": DEFAULT_USER_AGENT}) as client:
+        async with httpx.AsyncClient(
+            timeout=10.0,
+            headers={
+                "User-Agent": DEFAULT_USER_AGENT,
+                "Accept-Language": "ja,en-US;q=0.9,en;q=0.8",
+            },
+            follow_redirects=True,
+        ) as client:
             response = await client.get(url)
     except httpx.HTTPError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, f"欲しいものリストにアクセスできませんでした: {exc}") from exc
@@ -1233,6 +1249,57 @@ async def fetch_wishlist_snapshot(url: str) -> dict[str, str | int | None]:
     return {
         "title": extract_title(html),
         "price": extract_price_snapshot(html),
+    }
+
+
+def extract_wishlist_items_summary(html: str) -> dict[str, object]:
+    """Extract wishlist item count and (when possible) a single target item's title/price.
+
+    This is intentionally regex-based to avoid brittle DOM parsing and to work in server environments.
+    """
+
+    asins = list(dict.fromkeys(WISHLIST_ASIN_PATTERN.findall(html)))
+    prices_raw = WISHLIST_ITEM_PRICE_PATTERN.findall(html)
+    prices = []
+    for raw in prices_raw:
+        try:
+            prices.append(int(raw.replace(",", "")))
+        except ValueError:
+            continue
+
+    item_count = max(len(asins), len(prices))
+
+    title: str | None = None
+    if len(asins) == 1:
+        target_asin = asins[0]
+        for asin, raw_title in WISHLIST_ASIN_TITLE_PATTERN.findall(html):
+            if asin.upper() == target_asin.upper():
+                title = re.sub(r"\s+", " ", raw_title).strip()
+                break
+    if not title:
+        title = extract_title(html)
+
+    price: int | None = None
+    unique_prices = list(dict.fromkeys(prices))
+    unique_in_range = [p for p in unique_prices if 3000 <= p <= 4000]
+    if item_count == 1:
+        if len(unique_in_range) == 1:
+            price = unique_in_range[0]
+        elif len(unique_prices) == 1:
+            # Still return the price so we can show an out-of-range error.
+            price = unique_prices[0]
+        else:
+            price = None
+    else:
+        # For multi-item lists we only care about count; returning a price would be misleading.
+        price = None
+
+    return {
+        "item_count": item_count,
+        "title": title,
+        "price": price,
+        "asins": asins,
+        "prices": unique_prices,
     }
 
 
@@ -1812,23 +1879,47 @@ async def register_wishlist(payload: WishlistRegisterRequest, user_id: str = Dep
 
     normalized_url = normalize_wishlist_url(payload.url)
 
-    metadata: dict[str, str | int | None] = {"title": None, "price": None}
     try:
-        metadata = await fetch_wishlist_snapshot(normalized_url)
-    except Exception:
-        # Fallback if scraping fails (e.g. anti-bot blocking)
-        metadata = {"title": None, "price": None}
+        async with httpx.AsyncClient(
+            timeout=10.0,
+            headers={
+                "User-Agent": DEFAULT_USER_AGENT,
+                "Accept-Language": "ja,en-US;q=0.9,en;q=0.8",
+            },
+            follow_redirects=True,
+        ) as client:
+            response = await client.get(normalized_url)
+    except httpx.HTTPError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"欲しいものリストにアクセスできませんでした: {exc}") from exc
 
-    price = metadata.get("price")
-    title = metadata.get("title")
+    if response.status_code >= 400:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "欲しいものリストを取得できませんでした。公開設定やURLをご確認ください。")
+
+    summary = extract_wishlist_items_summary(response.text)
+    item_count = int(summary.get("item_count") or 0)
+    title = summary.get("title") if isinstance(summary.get("title"), str) else None
+    price = summary.get("price") if isinstance(summary.get("price"), int) else None
+
+    if item_count <= 0:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "欲しいものリストを判定できませんでした。公開設定にして、希望商品を1つだけ入れた状態で再度お試しください。")
+
+    if item_count >= 2:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "欲しいものリストに商品が2つ以上入っています。判定に迷うので、リストには希望商品を1つにしてください。",
+        )
 
     if price is None:
-        # Use default valid price if detection fails to allow registration
-        price = 3500
-        title = title or "Amazon 欲しいものリスト"
-    
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "商品の価格を判定できませんでした。公開設定にして、3000〜4000円の商品を1つだけ入れた状態で再度お試しください。")
+
     if price < 3000 or price > 4000:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"検出した価格が範囲外です (¥{price}). 3000〜4000円の品を登録してください。")
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"検出した価格が範囲外です (¥{price}). 3000円〜4000円の商品を1つだけ登録してください。",
+        )
+
+    if not title:
+        title = "Amazon 欲しいものリスト"
 
     apple_rights = user_data.get("apple_draw_rights") or 0
     upsert_wishlist_item(user_id, title, price, normalized_url)
