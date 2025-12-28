@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { M_PLUS_Rounded_1c, Zen_Maru_Gothic } from "next/font/google";
 
 import { Chatbot } from "@/components/Chatbot";
-import { AdminToolbar } from "@/components/AdminToolbar";
 import { NavigationMenu } from "@/components/NavigationMenu";
 import "./globals.css";
 
@@ -38,7 +37,6 @@ export default function RootLayout({
         <div className="fixed top-4 right-4 z-50">
           <NavigationMenu />
         </div>
-        <AdminToolbar />
         <Chatbot />
       </body>
     </html>
