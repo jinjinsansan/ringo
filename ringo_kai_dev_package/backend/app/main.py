@@ -13,7 +13,7 @@ from html import escape
 from pathlib import Path
 import re
 from typing import Annotated, Any, Dict, Literal, Tuple
-from urllib.parse import urlparse
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile, status
@@ -92,7 +92,27 @@ WISHLIST_ITEM_PRICE_PATTERN = re.compile(
     r"id=\"itemPrice_[^\"]+\"[\s\S]{0,1200}?<span class=\"a-offscreen\">[¥￥]\s*([0-9][0-9,]{2,})",
     re.IGNORECASE,
 )
+WISHLIST_MOBILE_PRICE_PATTERN = re.compile(
+    r"data-cy=\"price-recipe\"[\s\S]{0,1200}?<span class=\"a-offscreen\">[¥￥]\s*([0-9][0-9,]{2,})",
+    re.IGNORECASE,
+)
 DEFAULT_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+MOBILE_USER_AGENT = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
+AMAZON_DESKTOP_HEADERS = {
+    "User-Agent": DEFAULT_USER_AGENT,
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+    "Accept-Language": "ja,en-US;q=0.9,en;q=0.8",
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache",
+    "Upgrade-Insecure-Requests": "1",
+}
+AMAZON_MOBILE_HEADERS = {
+    "User-Agent": MOBILE_USER_AGENT,
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+    "Accept-Language": "ja,en-US;q=0.9,en;q=0.8",
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache",
+}
 REFERRAL_THRESHOLDS = [3, 5, 10, 20, 30]
 REFERRAL_CODE_ALPHABET = "".join(ch for ch in string.ascii_uppercase if ch not in {"I", "O"}) + "23456789"
 REFERRAL_CODE_LENGTH = 8
@@ -1251,24 +1271,110 @@ def extract_title(html: str) -> str | None:
     return re.sub(r"\s+", " ", title)
 
 
+def _replace_host(url: str, new_host: str) -> str:
+    parsed = urlparse(url)
+    if not new_host or parsed.netloc == new_host:
+        return url
+    return urlunparse(parsed._replace(netloc=new_host))
+
+
+def _ensure_query_params(url: str, updates: dict[str, str]) -> str:
+    parsed = urlparse(url)
+    query = dict(parse_qsl(parsed.query, keep_blank_values=True))
+    changed = False
+    for key, value in updates.items():
+        if query.get(key) != value:
+            query[key] = value
+            changed = True
+    if not changed:
+        return url
+    return urlunparse(parsed._replace(query=urlencode(query, doseq=True)))
+
+
+def _ensure_mobile_view(url: str) -> str:
+    return _ensure_query_params(
+        url,
+        {
+            "viewType": "mobile",
+            "sort": "default",
+            "language": "ja_JP",
+        },
+    )
+
+
+def _looks_like_wishlist_html(html: str) -> bool:
+    if not html:
+        return False
+    if WISHLIST_ASIN_PATTERN.search(html):
+        return True
+    if "itemPrice_" in html or "wl-list-item" in html or "g-items" in html:
+        return True
+    return False
+
+
+def _is_robot_block(html: str) -> bool:
+    if not html:
+        return True
+    lowered = html.lower()
+    if "robot check" in lowered or "enter the characters you see below" in lowered:
+        return True
+    if "api-services-support@amazon.com" in lowered:
+        return True
+    return False
+
+
+async def fetch_wishlist_html(url: str) -> str:
+    parsed = urlparse(url)
+    host_variants = [parsed.netloc]
+    if parsed.netloc.endswith(".amazon.jp") and parsed.netloc != "www.amazon.co.jp":
+        host_variants.append("www.amazon.co.jp")
+    if parsed.netloc.endswith(".amazon.com") and parsed.netloc != "www.amazon.com":
+        host_variants.append("www.amazon.com")
+
+    variants: list[tuple[str, dict[str, str], str]] = []
+    seen: set[str] = set()
+    for host in host_variants:
+        base = _replace_host(url, host)
+        for label, transformer, headers in (
+            ("desktop", lambda value: value, AMAZON_DESKTOP_HEADERS),
+            ("mobile", _ensure_mobile_view, AMAZON_MOBILE_HEADERS),
+        ):
+            candidate = transformer(base)
+            if candidate in seen:
+                continue
+            seen.add(candidate)
+            variants.append((candidate, headers, f"{host or parsed.netloc}:{label}"))
+
+    last_error = ""
+    for candidate, headers, label in variants:
+        try:
+            async with httpx.AsyncClient(timeout=10.0, headers=headers, follow_redirects=True) as client:
+                response = await client.get(candidate)
+        except httpx.HTTPError as exc:
+            last_error = f"{label} fetch error: {exc}"
+            continue
+
+        if response.status_code >= 400:
+            last_error = f"{label} HTTP {response.status_code}"
+            continue
+
+        html = response.text
+        if _is_robot_block(html):
+            last_error = f"{label} blocked by Amazon"
+            continue
+
+        if _looks_like_wishlist_html(html):
+            return html
+        last_error = f"{label} unexpected HTML structure"
+
+    raise HTTPException(
+        status.HTTP_400_BAD_REQUEST,
+        f"欲しいものリストを取得できませんでした。公開設定やURLをご確認ください。({last_error or 'unknown error'})",
+    )
+
+
 async def fetch_wishlist_snapshot(url: str) -> dict[str, str | int | None]:
-    try:
-        async with httpx.AsyncClient(
-            timeout=10.0,
-            headers={
-                "User-Agent": DEFAULT_USER_AGENT,
-                "Accept-Language": "ja,en-US;q=0.9,en;q=0.8",
-            },
-            follow_redirects=True,
-        ) as client:
-            response = await client.get(url)
-    except httpx.HTTPError as exc:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"欲しいものリストにアクセスできませんでした: {exc}") from exc
-
-    if response.status_code >= 400:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "欲しいものリストを取得できませんでした。公開設定やURLをご確認ください。")
-
-    html = response.text
+    html = await fetch_wishlist_html(url)
     return {
         "title": extract_title(html),
         "price": extract_price_snapshot(html),
@@ -1282,7 +1388,9 @@ def extract_wishlist_items_summary(html: str) -> dict[str, object]:
     """
 
     asins = list(dict.fromkeys(WISHLIST_ASIN_PATTERN.findall(html)))
-    prices_raw = WISHLIST_ITEM_PRICE_PATTERN.findall(html)
+    prices_raw: list[str] = []
+    for pattern in (WISHLIST_ITEM_PRICE_PATTERN, WISHLIST_MOBILE_PRICE_PATTERN):
+        prices_raw.extend(pattern.findall(html))
     prices = []
     for raw in prices_raw:
         try:
@@ -1304,6 +1412,10 @@ def extract_wishlist_items_summary(html: str) -> dict[str, object]:
 
     price: int | None = None
     unique_prices = list(dict.fromkeys(prices))
+    if not unique_prices:
+        fallback_price = extract_price_snapshot(html)
+        if isinstance(fallback_price, int):
+            unique_prices = [fallback_price]
     unique_in_range = [p for p in unique_prices if 3000 <= p <= 4000]
     if item_count == 1:
         if len(unique_in_range) == 1:
@@ -1991,23 +2103,8 @@ async def register_wishlist(payload: WishlistRegisterRequest, user_id: str = Dep
 
     normalized_url = normalize_wishlist_url(payload.url)
 
-    try:
-        async with httpx.AsyncClient(
-            timeout=10.0,
-            headers={
-                "User-Agent": DEFAULT_USER_AGENT,
-                "Accept-Language": "ja,en-US;q=0.9,en;q=0.8",
-            },
-            follow_redirects=True,
-        ) as client:
-            response = await client.get(normalized_url)
-    except httpx.HTTPError as exc:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"欲しいものリストにアクセスできませんでした: {exc}") from exc
-
-    if response.status_code >= 400:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "欲しいものリストを取得できませんでした。公開設定やURLをご確認ください。")
-
-    summary = extract_wishlist_items_summary(response.text)
+    html = await fetch_wishlist_html(normalized_url)
+    summary = extract_wishlist_items_summary(html)
     item_count = int(summary.get("item_count") or 0)
     title = summary.get("title") if isinstance(summary.get("title"), str) else None
     price = summary.get("price") if isinstance(summary.get("price"), int) else None
