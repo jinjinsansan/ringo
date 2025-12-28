@@ -464,7 +464,7 @@ def release_wishlist_assignment(purchase_id: int) -> None:
     supabase.table("wishlist_items").update({"assigned_purchase_id": None}).eq("assigned_purchase_id", purchase_id).execute()
 
 
-def ensure_mock_wishlist_item(exclude_user_id: str | None = None) -> None:
+def ensure_mock_target_user(exclude_user_id: str | None = None) -> None:
     if not ENABLE_MOCK_WISHLIST_SEED:
         return
     if exclude_user_id and exclude_user_id == MOCK_TARGET_USER_ID:
@@ -472,16 +472,28 @@ def ensure_mock_wishlist_item(exclude_user_id: str | None = None) -> None:
 
     now = utc_now().isoformat()
     existing_user = supabase.table("users").select("id").eq("id", MOCK_TARGET_USER_ID).limit(1).execute()
-    if not existing_user.data:
-        supabase.table("users").insert(
-            {
-                "id": MOCK_TARGET_USER_ID,
-                "email": "mock-target@ringo-kai.local",
-                "status": "active",
-                "created_at": now,
-                "updated_at": now,
-            }
-        ).execute()
+    if existing_user.data:
+        return
+
+    supabase.table("users").insert(
+        {
+            "id": MOCK_TARGET_USER_ID,
+            "email": "mock-target@ringo-kai.local",
+            "status": "active",
+            "created_at": now,
+            "updated_at": now,
+        }
+    ).execute()
+
+
+def ensure_mock_wishlist_item(exclude_user_id: str | None = None) -> None:
+    if not ENABLE_MOCK_WISHLIST_SEED:
+        return
+    if exclude_user_id and exclude_user_id == MOCK_TARGET_USER_ID:
+        return
+
+    now = utc_now().isoformat()
+    ensure_mock_target_user(exclude_user_id=exclude_user_id)
 
     existing_item = supabase.table("wishlist_items").select("id").eq("user_id", MOCK_TARGET_USER_ID).limit(1).execute()
     if existing_item.data:
@@ -517,12 +529,14 @@ def create_mock_purchase(user_id: str) -> dict[str, object]:
     except HTTPException:
         normalized = MOCK_WISHLIST_URL
 
+    ensure_mock_target_user(exclude_user_id=user_id)
+
     purchase_insert = (
         supabase.table("purchases")
         .insert(
             {
                 "purchaser_id": user_id,
-                "target_user_id": user_id,
+                "target_user_id": MOCK_TARGET_USER_ID,
                 "target_wishlist_url": normalized,
                 "target_item_name": MOCK_WISHLIST_TITLE,
                 "target_item_price": MOCK_WISHLIST_PRICE,
@@ -1583,7 +1597,7 @@ async def start_purchase(user_id: str = Depends(get_user_id)):
         supabase.table("users").update({"status": "ready_to_purchase", "updated_at": utc_now().isoformat()}).eq("id", user_id).execute()
         return {
             "purchase_id": purchase["id"],
-            "alias": "テスト用りんごネーム",
+            "alias": build_anonymous_alias(purchase.get("target_user_id")),
             "item_name": purchase.get("target_item_name") or MOCK_WISHLIST_TITLE,
             "price": int(purchase.get("target_item_price") or MOCK_WISHLIST_PRICE),
             "wishlist_url": purchase.get("target_wishlist_url") or MOCK_WISHLIST_URL,
