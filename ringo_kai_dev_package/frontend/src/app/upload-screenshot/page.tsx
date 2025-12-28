@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import type { ChangeEvent } from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { UserFlowGuard } from "@/components/UserFlowGuard";
@@ -103,6 +103,7 @@ const compressScreenshot = async (input: File) => {
 export default function UploadScreenshotPage() {
   const router = useRouter();
   const { user, refresh } = useUser();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [purchase, setPurchase] = useState<CurrentPurchase | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -154,6 +155,8 @@ export default function UploadScreenshotPage() {
     setError(null);
     setSuccess(null);
     const selected = event.target.files?.[0];
+    // Allow picking the same file again after a failed upload.
+    event.currentTarget.value = "";
     if (!selected) {
       setFile(null);
       setPreviewUrl(null);
@@ -190,6 +193,18 @@ export default function UploadScreenshotPage() {
       setError("画像の最適化に失敗しました。そのままアップロードをお試しください。");
     } finally {
       setOptimizing(false);
+    }
+  };
+
+  const resetSelection = () => {
+    setError(null);
+    setSuccess(null);
+    setFile(null);
+    setUploadedUrl(null);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
@@ -291,6 +306,7 @@ export default function UploadScreenshotPage() {
                     type="file"
                     accept="image/png, image/jpeg"
                     onChange={handleFileChange}
+                    ref={fileInputRef}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   />
                   {previewUrl ? (
@@ -315,6 +331,11 @@ export default function UploadScreenshotPage() {
                 </div>
 
                 <div className="flex flex-col gap-3">
+                  {(file || uploadedUrl) && (
+                    <button type="button" onClick={resetSelection} className="btn-secondary w-full">
+                      別の画像を選び直す
+                    </button>
+                  )}
                   {file && !uploadedUrl && (
                      <button
                       type="button"
