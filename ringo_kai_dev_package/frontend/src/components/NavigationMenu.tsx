@@ -267,23 +267,23 @@ export function NavigationMenu() {
   };
 
   return (
-    <div className="relative z-50">
+    <div className="relative z-[9999]">
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-ringo-pink-soft/70 bg-white shadow-lg shadow-ringo-pink/20 transition hover:-translate-y-0.5 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-ringo-rose"
+        className="flex h-14 w-14 items-center justify-center rounded-full bg-white border-2 border-gray-200 shadow-xl hover:shadow-2xl hover:border-ringo-rose transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-ringo-rose/50"
         aria-label={isOpen ? "メニューを閉じる" : "メニューを開く"}
         aria-expanded={isOpen}
         aria-controls="navigation-menu"
         type="button"
       >
-        <span className="flex flex-col items-center justify-center gap-[5px]" aria-hidden="true">
+        <span className="flex flex-col items-center justify-center gap-[6px]" aria-hidden="true">
           <span
-            className={`block h-[3px] w-6 rounded-sm bg-ringo-ink transition-all duration-300 ${isOpen ? "translate-y-[8px] rotate-45" : ""}`}
+            className={`block h-[4px] w-7 rounded-full bg-gray-800 transition-all duration-300 ${isOpen ? "translate-y-[10px] rotate-45" : ""}`}
           />
-          <span className={`block h-[3px] w-6 rounded-sm bg-ringo-ink transition-all duration-300 ${isOpen ? "opacity-0" : ""}`} />
+          <span className={`block h-[4px] w-7 rounded-full bg-gray-800 transition-all duration-300 ${isOpen ? "opacity-0" : ""}`} />
           <span
-            className={`block h-[3px] w-6 rounded-sm bg-ringo-ink transition-all duration-300 ${isOpen ? "-translate-y-[8px] -rotate-45" : ""}`}
+            className={`block h-[4px] w-7 rounded-full bg-gray-800 transition-all duration-300 ${isOpen ? "-translate-y-[10px] -rotate-45" : ""}`}
           />
         </span>
       </button>
@@ -291,7 +291,7 @@ export function NavigationMenu() {
       {/* Backdrop */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm"
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[9998]"
           onClick={() => setIsOpen(false)}
           aria-hidden="true"
         />
@@ -301,7 +301,7 @@ export function NavigationMenu() {
       <div 
         id="navigation-menu"
         ref={menuRef}
-        className={`fixed top-0 right-0 h-full w-64 bg-white/95 backdrop-blur-md shadow-2xl transform transition-transform duration-300 ease-in-out border-l border-ringo-pink-soft/30 pt-20 px-6 ${
+        className={`fixed top-0 right-0 h-full w-64 bg-white/95 backdrop-blur-md shadow-2xl transform transition-transform duration-300 ease-in-out border-l border-ringo-pink-soft/30 pt-20 px-6 z-[9999] ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
         role="dialog"
