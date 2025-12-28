@@ -245,7 +245,13 @@ export function NavigationMenu() {
   }, [dashboard?.stats, user, userStatusIndex]);
 
   // Only show admin panel for goldbenchan@gmail.com
-  const showAdminEntry = user?.email === 'goldbenchan@gmail.com';
+  const isAdminEmail = user?.email?.toLowerCase().trim() === 'goldbenchan@gmail.com';
+  const showAdminEntry = isAdminEmail;
+  
+  // Debug log
+  if (user?.email && typeof window !== 'undefined') {
+    console.log('[NavigationMenu] User email:', user.email, 'Is admin:', isAdminEmail);
+  }
 
   const navItems = useMemo(
     () => [
