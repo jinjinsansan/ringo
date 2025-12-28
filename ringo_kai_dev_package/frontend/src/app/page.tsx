@@ -112,21 +112,21 @@ export default function Home() {
                 <h3 className="text-2xl font-bold font-logo text-center mb-8 text-ringo-ink">りんご会のこだわり</h3>
                 <ul className="space-y-4">
                     <li className="flex items-start gap-4">
-                        <span className="flex-shrink-0 w-8 h-8 rounded-full bg-ringo-green text-white flex items-center justify-center font-bold">✓</span>
+                        <span className="flex-shrink-0 w-8 h-8 rounded-full bg-ringo-green text-ringo-ink flex items-center justify-center font-bold">✓</span>
                         <div>
                             <h4 className="font-bold text-lg text-ringo-ink">完全匿名で安心</h4>
                             <p className="text-gray-600 text-sm">住所や本名を明かすことなく、Amazonの仕組みを使って安全にやり取りできます。</p>
                         </div>
                     </li>
                     <li className="flex items-start gap-4">
-                        <span className="flex-shrink-0 w-8 h-8 rounded-full bg-ringo-gold text-white flex items-center justify-center font-bold">✓</span>
+                        <span className="flex-shrink-0 w-8 h-8 rounded-full bg-ringo-gold text-ringo-ink flex items-center justify-center font-bold">✓</span>
                         <div>
                             <h4 className="font-bold text-lg text-ringo-ink">公平なシステム</h4>
                             <p className="text-gray-600 text-sm">独自のRTP（還元率）システムにより、購入と獲得のバランスを自動調整。ズルはできません！</p>
                         </div>
                     </li>
                     <li className="flex items-start gap-4">
-                        <span className="flex-shrink-0 w-8 h-8 rounded-full bg-ringo-rose text-white flex items-center justify-center font-bold">✓</span>
+                        <span className="flex-shrink-0 w-8 h-8 rounded-full bg-ringo-rose text-ringo-ink flex items-center justify-center font-bold">✓</span>
                         <div>
                             <h4 className="font-bold text-lg text-ringo-ink">友達紹介で確率アップ</h4>
                             <p className="text-gray-600 text-sm">お友達を招待すると、レアなりんご（購入免除権）が当たりやすくなります。</p>

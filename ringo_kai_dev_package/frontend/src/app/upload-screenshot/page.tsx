@@ -379,8 +379,8 @@ export default function UploadScreenshotPage() {
                     disabled={!uploadedUrl || isSubmitting}
                     className={`w-full py-4 rounded-full font-bold shadow-lg transition-all ${
                       uploadedUrl && !isSubmitting 
-                        ? "bg-gradient-to-r from-ringo-red to-ringo-rose text-white hover:scale-105" 
-                        : "bg-gray-300 text-white cursor-not-allowed"
+                        ? "bg-gradient-to-r from-ringo-red to-ringo-rose text-white drop-shadow" 
+                        : "bg-gray-200 text-gray-500 cursor-not-allowed"
                     }`}
                   >
                     {isSubmitting ? "送信中..." : "2. 確認へ送信する"}

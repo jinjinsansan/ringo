@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { AppleReveal, AppleType } from "@/components/AppleReveal";
 import { UserFlowGuard } from "@/components/UserFlowGuard";
 import { FlowLayout } from "@/components/FlowLayout";
+import { authorizedFetch } from "@/lib/status";
 import { useUser } from "@/lib/user";
-import { getBackendBaseUrl } from "@/lib/backend";
 
 type AppleStatus = "pending" | "revealed";
 
@@ -87,8 +87,6 @@ export default function DrawPage() {
   const [probabilityInfo, setProbabilityInfo] = useState<ProbabilityResponse | null>(null);
   const [showTechInfo, setShowTechInfo] = useState(false);
 
-  const apiBase = useMemo(() => getBackendBaseUrl(), []);
-
   const mapApple = useCallback((payload: AppleApiResponse): AppleRevealResponse => ({
     id: String(payload.id),
     appleType: payload.apple_type,
@@ -97,28 +95,18 @@ export default function DrawPage() {
     status: payload.status,
   }), []);
 
-  const buildUrl = useCallback(
-    (path: string) => `${apiBase}${path}`,
-    [apiBase]
-  );
-
   const fetchProbabilities = useCallback(async () => {
     if (!user) return;
     try {
-      const res = await fetch(buildUrl("/api/apple/probabilities"), {
+      const res = await authorizedFetch("/api/apple/probabilities", user.id, {
         cache: "no-store",
-        headers: {
-          "X-User-Id": user.id,
-        },
       });
-      if (res.ok) {
-        const data = (await res.json()) as ProbabilityResponse;
-        setProbabilityInfo(data);
-      }
+      const data = (await res.json()) as ProbabilityResponse;
+      setProbabilityInfo(data);
     } catch (err) {
-      console.error(err);
+      console.error("apple probabilities fetch failed", err);
     }
-  }, [buildUrl, user]);
+  }, [user]);
 
   const fetchResult = useCallback(
     async (appleId: string) => {
@@ -126,23 +114,18 @@ export default function DrawPage() {
       setResultLoading(true);
       setConsumeMessage(null);
       try {
-        const res = await fetch(buildUrl(`/api/apple/result/${appleId}`), {
+        const res = await authorizedFetch(`/api/apple/result/${appleId}`, user.id, {
           cache: "no-store",
-          headers: {
-            "X-User-Id": user.id,
-          },
         });
-        if (res.ok) {
-          const data = (await res.json()) as AppleResult;
-          setAppleResult(data);
-        }
+        const data = (await res.json()) as AppleResult;
+        setAppleResult(data);
       } catch (err) {
         console.warn("apple result fetch failed", err);
       } finally {
         setResultLoading(false);
       }
     },
-    [buildUrl, user]
+    [user]
   );
 
   const fetchCurrentApple = useCallback(async () => {
@@ -150,28 +133,23 @@ export default function DrawPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(buildUrl("/api/apple/current"), {
+      const res = await authorizedFetch("/api/apple/current", user.id, {
         cache: "no-store",
-        headers: {
-          "X-User-Id": user.id,
-        },
       });
-      if (res.ok) {
-        const data = (await res.json()) as AppleApiResponse | null;
-        const mapped = data ? mapApple(data) : null;
-        setCurrentApple(mapped);
-        if (mapped) {
-          fetchResult(mapped.id);
-        } else {
-          setAppleResult(null);
-        }
+      const data = (await res.json()) as AppleApiResponse | null;
+      const mapped = data ? mapApple(data) : null;
+      setCurrentApple(mapped);
+      if (mapped) {
+        fetchResult(mapped.id);
+      } else {
+        setAppleResult(null);
       }
     } catch (err) {
       console.warn("apple fetch failed", err);
     } finally {
       setLoading(false);
     }
-  }, [buildUrl, fetchResult, mapApple, user]);
+  }, [fetchResult, mapApple, user]);
 
   useEffect(() => {
     fetchCurrentApple();
@@ -186,15 +164,13 @@ export default function DrawPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(buildUrl("/api/apple/draw"), {
+      const res = await authorizedFetch("/api/apple/draw", user.id, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-User-Id": user.id,
         },
         body: JSON.stringify({ referral_count: 0 }),
       });
-      if (!res.ok) throw new Error("りんご抽選に失敗しました");
       const data = (await res.json()) as AppleApiResponse;
       const mapped = mapApple(data);
       setCurrentApple(mapped);
@@ -216,14 +192,12 @@ export default function DrawPage() {
     }
     try {
       setConsumeMessage(null);
-      const res = await fetch(buildUrl(`/api/apple/consume/${appleResult.id}`), {
+      const res = await authorizedFetch(`/api/apple/consume/${appleResult.id}`, user.id, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-User-Id": user.id,
         },
       });
-      if (!res.ok) throw new Error("チケットを使用できませんでした");
       const data = (await res.json()) as { purchase_available: number };
       setConsumeMessage("購入免除チケットを1枚使用しました！次回の購入義務が免除されます✨");
       setAppleResult((prev) => (prev ? { ...prev, purchase_available: data.purchase_available } : prev));
@@ -354,11 +328,11 @@ export default function DrawPage() {
 
           {/* Friends CTA */}
           <Link href="/friends" className="block">
-            <div className="bg-gradient-to-r from-ringo-rose to-ringo-pink text-white rounded-2xl p-6 shadow-md transform transition hover:scale-[1.02] active:scale-95">
+            <div className="bg-gradient-to-r from-ringo-rose to-ringo-pink rounded-2xl p-6 shadow-md transform transition hover:scale-[1.02] active:scale-95 text-ringo-ink">
               <div className="flex items-center justify-between">
                  <div>
-                   <h3 className="font-bold text-lg">お友達を招待する</h3>
-                   <p className="text-xs opacity-90">レアりんごの確率がアップ！</p>
+                   <h3 className="font-bold text-lg text-ringo-rose">お友達を招待する</h3>
+                   <p className="text-xs text-ringo-ink/80">レアりんごの確率がアップ！</p>
                  </div>
                  <div className="text-3xl">👯‍♀️</div>
               </div>

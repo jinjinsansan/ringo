@@ -130,22 +130,22 @@ export default function FriendsPage() {
           ) : summary ? (
              <>
                {/* Stats Card */}
-               <section className="bg-gradient-to-br from-ringo-rose to-ringo-pink text-white rounded-[2rem] p-6 shadow-ringo-card text-center relative overflow-hidden">
+               <section className="bg-gradient-to-br from-ringo-rose to-ringo-pink rounded-[2rem] p-6 shadow-ringo-card text-center relative overflow-hidden text-ringo-ink">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-white/20 rounded-full blur-2xl translate-x-1/2 -translate-y-1/2"></div>
                   
                   <div className="relative z-10">
-                     <p className="text-sm font-bold opacity-90 mb-2">現在の紹介人数</p>
+                     <p className="text-sm font-bold text-ringo-rose mb-2">現在の紹介人数</p>
                      <div className="text-5xl font-bold mb-4">
                        {summary.referral_count} <span className="text-lg">人</span>
                      </div>
                      
-                     <div className="bg-white/20 rounded-full h-4 w-full max-w-xs mx-auto mb-2 overflow-hidden backdrop-blur-sm">
+                     <div className="bg-white/50 rounded-full h-4 w-full max-w-xs mx-auto mb-2 overflow-hidden backdrop-blur-sm">
                        <div 
-                         className="bg-white h-full rounded-full transition-all duration-1000 ease-out"
+                         className="bg-ringo-rose h-full rounded-full transition-all duration-1000 ease-out"
                          style={{ width: `${summary.progress_percent}%` }}
                        ></div>
                      </div>
-                     <p className="text-xs font-bold">
+                     <p className="text-xs font-bold text-ringo-ink">
                        次のレベルまで あと {summary.next_threshold ? summary.next_threshold - summary.referral_count : 0} 人！
                      </p>
                   </div>
@@ -217,7 +217,7 @@ export default function FriendsPage() {
                     >
                       <div className={`
                         w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg
-                        ${t.status === 'completed' ? 'bg-ringo-gold text-white' : 'bg-gray-200 text-gray-400'}
+                        ${t.status === 'completed' ? 'bg-ringo-gold text-ringo-ink' : 'bg-gray-200 text-gray-400'}
                       `}>
                         {t.count}
                       </div>

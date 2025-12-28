@@ -166,7 +166,7 @@ export function Chatbot() {
                 className={`rounded-2xl px-3 py-2 ${
                   msg.role === "bot"
                     ? "bg-ringo-purple/20 text-ringo-ink"
-                    : "ml-auto bg-ringo-rose text-white"
+                    : "ml-auto bg-ringo-rose/70 text-ringo-ink border border-ringo-rose/40"
                 }`}
               >
                 {msg.text}
@@ -187,7 +187,7 @@ export function Chatbot() {
             />
             <button
               type="submit"
-              className="rounded-2xl bg-ringo-rose px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className="rounded-2xl bg-ringo-rose px-4 py-2 text-sm font-semibold text-ringo-ink disabled:opacity-60"
               disabled={isSending}
             >
               送信

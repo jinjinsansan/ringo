@@ -103,7 +103,7 @@ export default function TutorialPage() {
                  "みんなで楽しむ気持ちを持っていますか？"
                ].map((text, i) => (
                  <li key={i} className="flex items-start gap-3">
-                   <span className="flex-shrink-0 w-5 h-5 rounded-full bg-ringo-rose text-white flex items-center justify-center text-xs mt-0.5">✓</span>
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-ringo-rose text-ringo-ink flex items-center justify-center text-xs mt-0.5">✓</span>
                    <span className="text-sm text-gray-600">{text}</span>
                  </li>
                ))}

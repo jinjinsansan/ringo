@@ -97,9 +97,9 @@ export function FlowLayout({ currentStepIndex, children, title, subtitle, onBack
                           className={`
                             w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold border-2 transition-all duration-300
                             ${isActive 
-                              ? "bg-ringo-rose border-ringo-rose text-white scale-110 shadow-lg shadow-ringo-rose/30" 
+                              ? "bg-ringo-rose border-ringo-rose text-ringo-ink scale-110 shadow-lg shadow-ringo-rose/30" 
                               : isCompleted 
-                                ? "bg-ringo-pink text-white border-ringo-pink group-hover:bg-ringo-rose group-hover:border-ringo-rose" 
+                                ? "bg-ringo-pink text-ringo-ink border-ringo-pink group-hover:bg-ringo-rose group-hover:border-ringo-rose" 
                                 : "bg-white border-ringo-pink-soft text-ringo-pink group-hover:border-ringo-pink"
                             }
                           `}
@@ -127,7 +127,7 @@ export function FlowLayout({ currentStepIndex, children, title, subtitle, onBack
                         className={`
                           w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold border-2 transition-all duration-300
                           ${isActive 
-                            ? "bg-ringo-rose border-ringo-rose text-white scale-110 shadow-lg shadow-ringo-rose/30" 
+                            ? "bg-ringo-rose border-ringo-rose text-ringo-ink scale-110 shadow-lg shadow-ringo-rose/30" 
                             : "bg-white border-gray-300 text-gray-400"
                           }
                         `}
