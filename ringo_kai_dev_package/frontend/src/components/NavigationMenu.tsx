@@ -401,6 +401,23 @@ export function NavigationMenu() {
               })}
             </nav>
 
+            {user?.isAdmin && (
+              <div className="space-y-2">
+                <div className="text-[11px] font-bold text-gray-400 tracking-wide">管理者専用</div>
+                <Link
+                  href="/admin"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-3 rounded-xl border border-ringo-purple/30 bg-white/80 px-4 py-3 text-sm font-bold text-ringo-indigo outline-none transition hover:border-ringo-rose hover:bg-white focus:ring-2 focus:ring-ringo-rose"
+                >
+                  <span className="text-lg">🛡️</span>
+                  <div>
+                    <p>管理者ダッシュボード</p>
+                    <p className="text-[11px] font-normal text-gray-500">AI審査 & ユーザー管理</p>
+                  </div>
+                </Link>
+              </div>
+            )}
+
             <button
               onClick={handleLogout}
               className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 bg-white/60 border border-white hover:bg-red-50 hover:text-red-600 transition-colors w-full text-left outline-none focus:ring-2 focus:ring-red-200"

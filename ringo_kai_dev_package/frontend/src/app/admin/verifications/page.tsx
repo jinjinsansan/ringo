@@ -1,33 +1,77 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getBackendBaseUrl } from "@/lib/backend";
+
+type WishlistAssignment = {
+  id?: string;
+  title?: string;
+  price?: number;
+  url?: string;
+  owner_id?: string;
+  owner_email?: string;
+  assigned_at?: string;
+} | null;
+
+type OcrSnapshot = {
+  item_name?: string | null;
+  order_id?: string | null;
+  price?: number | null;
+  confidence?: number | null;
+  matched_name?: boolean | null;
+  matched_price?: boolean | null;
+} | null;
+
+type VerificationMetadata = {
+  evaluated_at?: string;
+  model?: string;
+  [key: string]: unknown;
+} | null;
 
 type VerificationRow = {
   id: number;
   purchaser_id: string;
   purchaser_email?: string;
+  target_user_id?: string;
+  target_user_email?: string;
   status: string;
   verification_status?: string;
   verification_result?: string;
   screenshot_url?: string;
+  has_screenshot?: boolean;
   admin_notes?: string;
   created_at?: string;
+  verified_at?: string;
   target_item_name?: string;
   target_item_price?: number;
   target_wishlist_url?: string;
+  ocr_snapshot?: OcrSnapshot;
+  verification_metadata?: VerificationMetadata;
+  wishlist_assignment?: WishlistAssignment;
 };
 
 const backendBase = getBackendBaseUrl();
+
+const statusColors: Record<string, string> = {
+  approved: "bg-ringo-green/20 text-ringo-green",
+  rejected: "bg-ringo-red/20 text-ringo-red",
+  review_required: "bg-ringo-indigo/15 text-ringo-indigo",
+  submitted: "bg-ringo-pink/10 text-ringo-rose",
+};
+
+const formatDate = (value?: string) => (value ? new Date(value).toLocaleString("ja-JP") : "-");
+const formatPrice = (value?: number | null) => (typeof value === "number" ? `¥${value.toLocaleString()}` : "-");
 
 export default function AdminVerificationsPage() {
   const [adminToken, setAdminToken] = useState<string>("");
   const [storedTokenChecked, setStoredTokenChecked] = useState(false);
   const [verifications, setVerifications] = useState<VerificationRow[]>([]);
   const [isLoading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [decisionMessage, setDecisionMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [decisionLoadingId, setDecisionLoadingId] = useState<number | null>(null);
 
   useEffect(() => {
     const saved = window.localStorage.getItem("adminToken");
@@ -69,6 +113,7 @@ export default function AdminVerificationsPage() {
 
   const handleDecision = async (id: number, decision: "approved" | "rejected" | "review_required") => {
     if (!canFetch) return;
+    setDecisionLoadingId(id);
     setDecisionMessage(null);
     try {
       const res = await fetch(`${backendBase}/api/admin/verifications/${id}`, {
@@ -85,14 +130,19 @@ export default function AdminVerificationsPage() {
     } catch (err) {
       console.error(err);
       setDecisionMessage(err instanceof Error ? err.message : "決定の送信に失敗しました。");
+    } finally {
+      setDecisionLoadingId(null);
     }
   };
 
   return (
     <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-4 py-10 text-ringo-ink">
       <header className="space-y-2">
-        <h1 className="font-logo text-4xl font-bold">管理者: 購入検証</h1>
-        <p className="text-sm text-ringo-ink/70">提出されたスクリーンショットとAI判定結果を確認し、手動で承認 / 却下できます。</p>
+        <p className="text-sm font-semibold text-ringo-rose">管理者ワークスペース</p>
+        <h1 className="font-logo text-4xl font-bold">購入スクショ審査</h1>
+        <p className="text-sm text-ringo-ink/70">
+          欲しいものリストのマッチング状況・AI判定・OCR結果をひと目で確認し、最終承認を行えます。
+        </p>
       </header>
 
       <section className="rounded-3xl border border-ringo-purple/20 bg-white/80 p-6 shadow-ringo-card">
@@ -112,7 +162,7 @@ export default function AdminVerificationsPage() {
             className="flex-1 rounded-2xl border border-ringo-purple/30 bg-ringo-bg/40 px-4 py-3 text-sm outline-none focus:border-ringo-pink focus:ring-2 focus:ring-ringo-pink/30"
           />
           <button type="submit" className="btn-primary px-6 text-sm">
-            認証 & 再読み込み
+            {isLoading ? "更新中..." : "認証 & 再読み込み"}
           </button>
         </form>
         {!backendBase && <p className="mt-2 text-sm text-ringo-red">NEXT_PUBLIC_BACKEND_URL が未設定のため、APIに接続できません。</p>}
@@ -124,94 +174,150 @@ export default function AdminVerificationsPage() {
 
       {error && <p className="rounded-3xl border border-ringo-red/30 bg-ringo-pink/10 px-4 py-3 text-sm text-ringo-red">{error}</p>}
 
-      <section className="rounded-3xl border border-ringo-purple/20 bg-white/80 p-6 shadow-ringo-card">
-        <div className="flex items-center justify-between">
+      <section className="rounded-3xl border border-ringo-purple/20 bg-white/90 p-6 shadow-ringo-card">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-semibold text-ringo-red">提出一覧</h2>
           <button
             type="button"
             onClick={fetchVerifications}
             className="rounded-ringo-pill border border-ringo-pink px-4 py-2 text-xs font-semibold text-ringo-pink"
           >
-            {isLoading ? "更新中..." : "再読み込み"}
+            {isLoading ? "更新中..." : "最新の状態に更新"}
           </button>
         </div>
         {verifications.length === 0 ? (
-          <p className="mt-4 text-sm text-ringo-ink/70">現在、検証待ちの購入はありません。</p>
+          <p className="mt-4 text-sm text-ringo-ink/70">現在、確認待ちの提出はありません。</p>
         ) : (
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full table-auto text-left text-sm">
-              <thead>
-                <tr className="border-b border-ringo-purple/20 text-xs uppercase text-ringo-ink/70">
-                  <th className="p-3">ID</th>
-                  <th className="p-3">ユーザー</th>
-                  <th className="p-3">商品</th>
-                  <th className="p-3">ステータス</th>
-                  <th className="p-3">スクショ</th>
-                  <th className="p-3">管理メモ</th>
-                  <th className="p-3">操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                {verifications.map((row) => (
-                  <tr key={row.id} className="border-b border-ringo-purple/10">
-                    <td className="p-3 align-top text-xs text-ringo-ink/70">{row.id}</td>
-                    <td className="p-3 align-top">
-                      <p className="font-semibold">{row.purchaser_email ?? row.purchaser_id}</p>
-                      <p className="text-xs text-ringo-ink/60">{row.created_at ? new Date(row.created_at).toLocaleString() : ""}</p>
-                    </td>
-                    <td className="p-3 align-top">
-                      <p className="font-semibold">{row.target_item_name}</p>
-                      <p className="text-xs text-ringo-ink/60">¥{row.target_item_price?.toLocaleString()}</p>
-                      {row.target_wishlist_url && (
-                        <Link href={row.target_wishlist_url} target="_blank" rel="noreferrer" className="text-xs text-ringo-pink underline">
-                          Wishlist を開く
+          <div className="mt-6 space-y-6">
+            {verifications.map((row) => {
+              const aiStatus = row.verification_status ?? row.status;
+              const wishlist = row.wishlist_assignment;
+              const ocr = row.ocr_snapshot;
+              const displayTitle = wishlist?.title ?? row.target_item_name ?? "(タイトル未登録)";
+              const displayPrice = wishlist?.price ?? row.target_item_price;
+
+              return (
+                <article key={row.id} className="rounded-3xl border border-ringo-purple/20 bg-white/90 p-5 shadow-ringo-card">
+                  <div className="flex flex-wrap items-start justify-between gap-3 border-b border-ringo-purple/10 pb-4">
+                    <div>
+                      <p className="text-xs font-semibold text-ringo-ink/60">購入者</p>
+                      <p className="text-base font-bold text-ringo-ink">{row.purchaser_email ?? row.purchaser_id}</p>
+                      <p className="text-xs text-gray-500">提出: {formatDate(row.created_at)}</p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <span className={`rounded-full px-3 py-1 font-semibold ${statusColors[aiStatus ?? "submitted"] ?? "bg-gray-100 text-gray-600"}`}>
+                        AI: {aiStatus ?? "-"}
+                      </span>
+                      <span className="rounded-full bg-ringo-slate-light/60 px-3 py-1 font-semibold text-ringo-ink/80">
+                        現在: {row.status}
+                      </span>
+                      {row.verified_at && <span className="rounded-full bg-ringo-green/20 px-3 py-1 font-semibold text-ringo-green">承認済み</span>}
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid gap-4 lg:grid-cols-3">
+                    <section className="rounded-2xl border border-ringo-purple/10 bg-ringo-bg/60 p-4 text-sm">
+                      <h3 className="text-xs font-semibold text-gray-500">割り当てられた欲しいもの</h3>
+                      <p className="mt-2 text-base font-bold text-ringo-ink">{displayTitle}</p>
+                      <p className="text-sm text-gray-600">{formatPrice(displayPrice)}</p>
+                      {(wishlist?.url ?? row.target_wishlist_url) && (
+                        <Link
+                          href={wishlist?.url ?? row.target_wishlist_url ?? "#"}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-2 inline-flex text-xs font-semibold text-ringo-pink underline"
+                        >
+                          Amazonリストを確認
                         </Link>
                       )}
-                    </td>
-                    <td className="p-3 align-top text-xs">
-                      <p>status: {row.status}</p>
-                      <p>verify: {row.verification_status}</p>
-                      <p className="text-ringo-ink/60">{row.verification_result}</p>
-                    </td>
-                    <td className="p-3 align-top text-xs">
-                      {row.screenshot_url ? (
-                        <Link href={row.screenshot_url} target="_blank" rel="noreferrer" className="text-ringo-pink underline">
-                          画像を開く
-                        </Link>
-                      ) : (
-                        <span className="text-ringo-ink/50">なし</span>
-                      )}
-                    </td>
-                    <td className="p-3 align-top text-xs text-ringo-ink/70">{row.admin_notes ?? "-"}</td>
-                    <td className="p-3 align-top">
-                      <div className="flex flex-col gap-2 text-xs">
-                        <button
-                          type="button"
-                          className="btn-primary px-3 py-1 text-xs"
-                          onClick={() => handleDecision(row.id, "approved")}
-                        >
-                          承認
-                        </button>
-                        <button
-                          type="button"
-                          className="rounded-ringo-pill bg-ringo-purple/80 px-3 py-1 font-semibold text-white"
-                          onClick={() => handleDecision(row.id, "review_required")}
-                        >
-                          要確認
-                        </button>
-                        <button
-                          type="button"
-                          className="rounded-ringo-pill bg-ringo-red px-3 py-1 font-semibold text-white"
-                          onClick={() => handleDecision(row.id, "rejected")}
-                        >
-                          却下
-                        </button>
+                      <div className="mt-3 rounded-xl bg-white/70 p-3 text-xs text-gray-500">
+                        <p>リスト所有者: {wishlist?.owner_email ?? row.target_user_email ?? "-"}</p>
+                        <p>マッチング日時: {formatDate(wishlist?.assigned_at)}</p>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </section>
+
+                    <section className="rounded-2xl border border-ringo-purple/10 bg-white/70 p-4 text-sm">
+                      <h3 className="text-xs font-semibold text-gray-500">スクリーンショット / OCR</h3>
+                      {row.screenshot_url ? (
+                        <div className="mt-2 overflow-hidden rounded-xl border border-white">
+                          <Image
+                            src={row.screenshot_url}
+                            alt={`スクリーンショット ${row.id}`}
+                            width={640}
+                            height={400}
+                            className="h-48 w-full object-cover"
+                            sizes="(max-width: 1024px) 100vw, 33vw"
+                          />
+                        </div>
+                      ) : (
+                        <p className="mt-2 text-xs text-gray-500">まだアップロードされていません。</p>
+                      )}
+                      <div className="mt-3 space-y-1 text-xs text-gray-600">
+                        <p>検出商品: {ocr?.item_name ?? "-"}</p>
+                        <p>
+                          検出価格: {formatPrice(ocr?.price)}
+                          {typeof ocr?.matched_price === "boolean" && (
+                            <span className={`ml-2 font-semibold ${ocr.matched_price ? "text-ringo-green" : "text-ringo-red"}`}>
+                              {ocr.matched_price ? "一致" : "不一致"}
+                            </span>
+                          )}
+                        </p>
+                        <p>注文番号: {ocr?.order_id ?? "-"}</p>
+                        <p>信頼度: {ocr?.confidence ? `${Math.round(ocr.confidence * 100)}%` : "-"}</p>
+                      </div>
+                    </section>
+
+                    <section className="rounded-2xl border border-ringo-purple/10 bg-ringo-slate-light/50 p-4 text-sm">
+                      <h3 className="text-xs font-semibold text-gray-500">AI 判定メモ</h3>
+                      <p className="mt-2 text-sm text-ringo-ink/80">{row.verification_result ?? "AI からのコメントはまだありません。"}</p>
+                      {row.admin_notes && (
+                        <p className="mt-3 rounded-xl bg-white/70 p-3 text-xs text-gray-600">
+                          最終メモ: {row.admin_notes}
+                        </p>
+                      )}
+                      {row.verification_metadata?.evaluated_at && (
+                        <p className="mt-2 text-xs text-gray-500">
+                          判定時刻: {formatDate(row.verification_metadata.evaluated_at as string)}
+                        </p>
+                      )}
+                    </section>
+                  </div>
+
+                  <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-ringo-purple/10 pt-4 text-xs text-gray-500">
+                    <div>
+                      <p>スクショ受領: {row.has_screenshot ? "済" : "未"}</p>
+                      <p>割り当て→購入者: {row.target_user_email ? `${row.target_user_email} → ${row.purchaser_email ?? row.purchaser_id}` : "-"}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2 text-sm font-semibold">
+                      <button
+                        type="button"
+                        onClick={() => handleDecision(row.id, "approved")}
+                        className="btn-primary px-6 text-xs"
+                        disabled={decisionLoadingId === row.id}
+                      >
+                        {decisionLoadingId === row.id ? "処理中..." : "承認する"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDecision(row.id, "review_required")}
+                        className="rounded-ringo-pill border border-ringo-purple/40 bg-white px-4 py-2 text-xs font-semibold text-ringo-indigo"
+                        disabled={decisionLoadingId === row.id}
+                      >
+                        要確認
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDecision(row.id, "rejected")}
+                        className="rounded-ringo-pill bg-ringo-red px-4 py-2 text-xs font-semibold text-white"
+                        disabled={decisionLoadingId === row.id}
+                      >
+                        却下
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
       </section>

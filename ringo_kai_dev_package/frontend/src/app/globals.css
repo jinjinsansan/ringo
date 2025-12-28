@@ -105,3 +105,12 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 20px;
 }
 
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+

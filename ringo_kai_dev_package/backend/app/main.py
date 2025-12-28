@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 from html import escape
 from pathlib import Path
 import re
-from typing import Annotated, Dict, Literal, Tuple
+from typing import Annotated, Any, Dict, Literal, Tuple
 from urllib.parse import urlparse
 
 from dotenv import load_dotenv
@@ -618,6 +618,23 @@ def fetch_dashboard_snapshot(user_id: str) -> tuple[dict[str, object], dict[str,
         start += page_size
 
     return profile, counts
+
+
+def fetch_wishlist_assignments(purchase_ids: list[int]) -> dict[int, dict[str, object]]:
+    if not purchase_ids:
+        return {}
+    response = (
+        supabase.table("wishlist_items")
+        .select("id,user_id,title,price,url,assigned_purchase_id,updated_at")
+        .in_("assigned_purchase_id", purchase_ids)
+        .execute()
+    )
+    mapping: dict[int, dict[str, object]] = {}
+    for row in response.data or []:
+        assigned_id = row.get("assigned_purchase_id")
+        if isinstance(assigned_id, int):
+            mapping[assigned_id] = row
+    return mapping
 
 
 async def seed_wishlist_items_from_users(limit: int = 50, exclude_user_id: str | None = None) -> int:
@@ -1309,7 +1326,59 @@ def extract_wishlist_items_summary(html: str) -> dict[str, object]:
     }
 
 
-def interpret_verification_response(raw: str) -> tuple[str, str]:
+def normalize_ocr_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
+    def coerce_price(value: Any) -> int | None:
+        if value is None:
+            return None
+        if isinstance(value, (int, float)):
+            return int(value)
+        if isinstance(value, str):
+            digits = re.sub(r"[^0-9]", "", value)
+            if digits:
+                try:
+                    return int(digits)
+                except ValueError:
+                    return None
+        return None
+
+    def parse_bool_flag(value: Any) -> bool | None:
+        if value is None:
+            return None
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, (int, float)):
+            return bool(int(value))
+        if isinstance(value, str):
+            lowered = value.strip().lower()
+            if lowered in {"true", "1", "yes", "y"}:
+                return True
+            if lowered in {"false", "0", "no", "n"}:
+                return False
+        return None
+
+    item_name = snapshot.get("item_name") or snapshot.get("product") or snapshot.get("detected_item")
+    order_id = snapshot.get("order_id") or snapshot.get("orderNumber") or snapshot.get("order")
+    price = coerce_price(snapshot.get("price") or snapshot.get("detected_price"))
+    confidence_raw = snapshot.get("confidence") or snapshot.get("score")
+    try:
+        confidence = float(confidence_raw)
+    except (TypeError, ValueError):
+        confidence = None
+
+    matched_name = parse_bool_flag(snapshot.get("matched_name"))
+    matched_price = parse_bool_flag(snapshot.get("matched_price"))
+
+    return {
+        "item_name": item_name,
+        "order_id": order_id,
+        "price": price,
+        "confidence": confidence,
+        "matched_name": matched_name,
+        "matched_price": matched_price,
+    }
+
+
+def interpret_verification_response(raw: str) -> tuple[str, str, dict[str, Any] | None, dict[str, Any] | None]:
     try:
         payload = json.loads(raw)
     except json.JSONDecodeError:
@@ -1318,21 +1387,44 @@ def interpret_verification_response(raw: str) -> tuple[str, str]:
     decision = str(payload.get("decision", "review")).lower()
     reason = payload.get("reason") or payload.get("message") or raw
 
+    ocr_snapshot = None
+    raw_ocr = payload.get("ocr") if isinstance(payload, dict) else None
+    if isinstance(raw_ocr, dict):
+        ocr_snapshot = normalize_ocr_snapshot(raw_ocr)
+
+    metadata: dict[str, Any] | None = None
+    if isinstance(payload, dict):
+        filtered = {key: value for key, value in payload.items() if key not in {"ocr", "reason", "message"}}
+        metadata = filtered or None
+
     if "approve" in decision:
-        return "approved", reason
+        return "approved", reason, ocr_snapshot, metadata
     if "reject" in decision:
-        return "rejected", reason
-    return "review_required", reason
+        return "rejected", reason, ocr_snapshot, metadata
+    return "review_required", reason, ocr_snapshot, metadata
 
 
-def run_screenshot_verification(screenshot_url: str, item_name: str, price: int) -> tuple[str, str]:
+def run_screenshot_verification(
+    screenshot_url: str,
+    item_name: str,
+    price: int,
+) -> tuple[str, str, dict[str, Any] | None, dict[str, Any] | None]:
+    metadata: dict[str, Any] = {
+        "model": "gpt-4o-mini",
+        "evaluated_at": utc_now().isoformat(),
+        "target_item": item_name,
+        "target_price": price,
+    }
+
     if not openai_client:
-        return "review_required", "OpenAI未設定のため自動審査をスキップしました"
+        metadata["skipped"] = True
+        return "review_required", "OpenAI未設定のため自動審査をスキップしました", None, metadata
 
     prompt = (
-        "以下のスクリーンショットがAmazon購入完了画面で、商品名が"
-        f"{item_name}であり、価格がおおよそ{price}円か確認してください。"
-        "結果は JSON で {\"decision\": \"APPROVED|REVIEW|REJECT\", \"reason\": \"...\"} の形式のみで回答してください。"
+        "以下のスクリーンショットがAmazon購入完了画面で、対象商品が"
+        f"{item_name} であり、価格が概ね ¥{price} であるかを判定してください。"
+        "必ず JSON で回答し、形式は {\"decision\": \"APPROVED|REVIEW|REJECT\", \"reason\": \"...\", \"ocr\": {\"item_name\": string, \"price\": number, \"order_id\": string, \"confidence\": number, \"matched_name\": boolean, \"matched_price\": boolean}} とします。"
+        "余計な文章は含めないでください。"
     )
 
     try:
@@ -1342,7 +1434,7 @@ def run_screenshot_verification(screenshot_url: str, item_name: str, price: int)
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a strict validator for Amazon purchase receipts. Respond only with JSON as specified.",
+                    "content": "You are a strict validator for Amazon purchase receipts. Respond only with the JSON schema provided.",
                 },
                 {
                     "role": "user",
@@ -1356,9 +1448,14 @@ def run_screenshot_verification(screenshot_url: str, item_name: str, price: int)
         content = response.choices[0].message.content or ""
     except Exception as exc:  # pragma: no cover - network failure
         print(f"[PurchaseVerify] OpenAI error: {exc}")
-        return "review_required", "OpenAI API エラーのため手動確認が必要です"
+        metadata["error"] = str(exc)
+        return "review_required", "OpenAI API エラーのため手動確認が必要です", None, metadata
 
-    return interpret_verification_response(content)
+    decision, reason, ocr_snapshot, raw_metadata = interpret_verification_response(content)
+    if raw_metadata:
+        metadata["llm"] = raw_metadata
+
+    return decision, reason, ocr_snapshot, metadata
 
 
 def build_chatbot_messages(payload: ChatbotRequest, user_id: str | None) -> list[dict[str, str]]:
@@ -1811,7 +1908,12 @@ async def submit_purchase(payload: PurchaseVerifyRequest, user_id: str = Depends
     if not screenshot_url:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "スクリーンショットのアップロードが必要です")
 
-    verification_status, verification_reason = run_screenshot_verification(
+    (
+        verification_status,
+        verification_reason,
+        ocr_snapshot,
+        verification_metadata,
+    ) = run_screenshot_verification(
         screenshot_url,
         purchase_resp.data.get("target_item_name", ""),
         purchase_resp.data.get("target_item_price", 0) or 0,
@@ -1825,6 +1927,10 @@ async def submit_purchase(payload: PurchaseVerifyRequest, user_id: str = Depends
         "verification_result": verification_reason,
         "verified_at": utc_now().isoformat() if verification_status == "approved" else None,
     }
+    if ocr_snapshot:
+        purchase_update["ocr_snapshot"] = ocr_snapshot
+    if verification_metadata:
+        purchase_update["verification_metadata"] = verification_metadata
     supabase.table("purchases").update(purchase_update).eq("id", payload.purchase_id).execute()
 
     user_snapshot = (
@@ -2035,8 +2141,8 @@ async def admin_list_verifications(_: None = Depends(require_admin)):
     response = (
         supabase.table("purchases")
         .select(
-            "id, purchaser_id, status, verification_status, verification_result, screenshot_url, admin_notes, created_at,"
-            " verified_at, target_item_name, target_item_price, target_wishlist_url"
+            "id, purchaser_id, target_user_id, status, verification_status, verification_result, screenshot_url, admin_notes, created_at,"
+            " verified_at, target_item_name, target_item_price, target_wishlist_url, ocr_snapshot, verification_metadata"
         )
         .in_("status", ["submitted", "review_required"])
         .order("created_at", desc=True)
@@ -2044,9 +2150,47 @@ async def admin_list_verifications(_: None = Depends(require_admin)):
         .execute()
     )
     rows = response.data or []
-    emails = fetch_user_emails({row["purchaser_id"] for row in rows})
+    purchase_ids = [row["id"] for row in rows if isinstance(row.get("id"), int)]
+    wishlist_map = fetch_wishlist_assignments(purchase_ids)
+
+    user_ids: set[str] = set()
     for row in rows:
-        row["purchaser_email"] = emails.get(row["purchaser_id"], "")
+        purchaser_id = row.get("purchaser_id")
+        target_user_id = row.get("target_user_id")
+        if isinstance(purchaser_id, str):
+            user_ids.add(purchaser_id)
+        if isinstance(target_user_id, str):
+            user_ids.add(target_user_id)
+    for wishlist in wishlist_map.values():
+        owner_id = wishlist.get("user_id")
+        if isinstance(owner_id, str):
+            user_ids.add(owner_id)
+
+    emails = fetch_user_emails(user_ids)
+
+    for row in rows:
+        purchaser_id = row.get("purchaser_id")
+        target_user_id = row.get("target_user_id")
+        row["purchaser_email"] = emails.get(purchaser_id, "")
+        row["target_user_email"] = emails.get(target_user_id, "")
+        row["has_screenshot"] = bool(row.get("screenshot_url"))
+        row["ocr_snapshot"] = row.get("ocr_snapshot") or None
+        row["verification_metadata"] = row.get("verification_metadata") or None
+
+        assignment = wishlist_map.get(row.get("id"))
+        if assignment:
+            owner_id = assignment.get("user_id")
+            row["wishlist_assignment"] = {
+                "id": assignment.get("id"),
+                "title": assignment.get("title"),
+                "price": assignment.get("price"),
+                "url": assignment.get("url"),
+                "owner_id": owner_id,
+                "owner_email": emails.get(owner_id, ""),
+                "assigned_at": assignment.get("updated_at"),
+            }
+        else:
+            row["wishlist_assignment"] = None
     return rows
 
 
