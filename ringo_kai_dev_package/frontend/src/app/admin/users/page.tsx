@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { getBackendBaseUrl } from "@/lib/backend";
+import { persistAdminToken, readAdminToken } from "@/lib/adminToken";
 
 type AdminUserRow = {
   id: string;
@@ -82,7 +83,7 @@ export default function AdminUsersPage() {
   );
 
   useEffect(() => {
-    const stored = window.localStorage.getItem("adminToken");
+    const stored = readAdminToken();
     if (stored) {
       setAdminToken(stored);
       setAdminTokenInput(stored);
@@ -105,9 +106,9 @@ export default function AdminUsersPage() {
     setAdminTokenInput(trimmed);
     setAdminToken(trimmed);
     if (trimmed) {
-      window.localStorage.setItem("adminToken", trimmed);
+      persistAdminToken(trimmed);
     } else {
-      window.localStorage.removeItem("adminToken");
+      persistAdminToken("");
     }
   };
 

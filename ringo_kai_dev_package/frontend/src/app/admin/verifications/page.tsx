@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getBackendBaseUrl } from "@/lib/backend";
+import { persistAdminToken, readAdminToken } from "@/lib/adminToken";
 
 type WishlistAssignment = {
   id?: string;
@@ -74,7 +75,7 @@ export default function AdminVerificationsPage() {
   const [decisionLoadingId, setDecisionLoadingId] = useState<number | null>(null);
 
   useEffect(() => {
-    const saved = window.localStorage.getItem("adminToken");
+    const saved = readAdminToken();
     if (saved) {
       setAdminToken(saved);
     }
@@ -96,7 +97,7 @@ export default function AdminVerificationsPage() {
       if (!res.ok) throw new Error("検証一覧を取得できませんでした");
       const data = (await res.json()) as VerificationRow[];
       setVerifications(data);
-      window.localStorage.setItem("adminToken", adminToken);
+      persistAdminToken(adminToken);
     } catch (err) {
       console.error(err);
       setError(err instanceof Error ? err.message : "一覧取得に失敗しました。");

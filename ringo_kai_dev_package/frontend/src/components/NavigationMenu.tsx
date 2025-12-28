@@ -8,6 +8,7 @@ import { usePathname } from "next/navigation";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { fetchDashboard } from "@/lib/status";
 import { statusOrder, useUser, type UserStatus } from "@/lib/user";
+import { ADMIN_TOKEN_EVENT, readAdminToken } from "@/lib/adminToken";
 
 type NextAction = {
   title: string;
@@ -79,6 +80,7 @@ export function NavigationMenu() {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [dashboard, setDashboard] = useState<DashboardSnapshot | null>(null);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
+  const [hasAdminAccess, setHasAdminAccess] = useState(false);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -89,6 +91,38 @@ export function NavigationMenu() {
   useEffect(() => {
     setIsOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const syncFromStorage = () => {
+      setHasAdminAccess(Boolean(readAdminToken()));
+    };
+
+    const handleCustom = (event: Event) => {
+      const custom = event as CustomEvent<{ hasToken?: boolean }>;
+      if (custom.detail && typeof custom.detail.hasToken === "boolean") {
+        setHasAdminAccess(custom.detail.hasToken);
+      } else {
+        syncFromStorage();
+      }
+    };
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === "adminToken") {
+        syncFromStorage();
+      }
+    };
+
+    syncFromStorage();
+    window.addEventListener(ADMIN_TOKEN_EVENT, handleCustom as EventListener);
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      window.removeEventListener(ADMIN_TOKEN_EVENT, handleCustom as EventListener);
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, []);
 
   // Fetch lightweight user stats when the menu opens (for "次にやること" guidance)
   useEffect(() => {
@@ -210,6 +244,8 @@ export function NavigationMenu() {
     return getDefaultNextAction(user.status);
   }, [dashboard?.stats, user, userStatusIndex]);
 
+  const showAdminEntry = (user?.isAdmin ?? false) || hasAdminAccess;
+
   const navItems = useMemo(
     () => [
       { label: "マイページ", description: "状況まとめ", path: "/dashboard", icon: "🏠", requiredStatus: "first_purchase_completed" as const },
@@ -241,10 +277,14 @@ export function NavigationMenu() {
         aria-controls="navigation-menu"
         type="button"
       >
-        <span className="flex flex-col justify-center gap-1.5">
-          <span className={`block h-0.5 w-6 rounded-full bg-ringo-rose transition-transform duration-300 ${isOpen ? "translate-y-2 rotate-45" : ""}`} />
-          <span className={`block h-0.5 w-6 rounded-full bg-ringo-rose transition-opacity duration-300 ${isOpen ? "opacity-0" : ""}`} />
-          <span className={`block h-0.5 w-6 rounded-full bg-ringo-rose transition-transform duration-300 ${isOpen ? "-translate-y-2 -rotate-45" : ""}`} />
+        <span className="flex flex-col items-center justify-center gap-1.5" aria-hidden="true">
+          <span
+            className={`block h-[2px] w-7 rounded-full bg-ringo-ink transition-transform duration-300 ${isOpen ? "translate-y-2 rotate-45" : ""}`}
+          />
+          <span className={`block h-[2px] w-7 rounded-full bg-ringo-ink transition-opacity duration-300 ${isOpen ? "opacity-0" : ""}`} />
+          <span
+            className={`block h-[2px] w-7 rounded-full bg-ringo-ink transition-transform duration-300 ${isOpen ? "-translate-y-2 -rotate-45" : ""}`}
+          />
         </span>
       </button>
 
@@ -401,7 +441,7 @@ export function NavigationMenu() {
               })}
             </nav>
 
-            {user?.isAdmin && (
+            {showAdminEntry && (
               <div className="space-y-2">
                 <div className="text-[11px] font-bold text-gray-400 tracking-wide">管理者専用</div>
                 <Link

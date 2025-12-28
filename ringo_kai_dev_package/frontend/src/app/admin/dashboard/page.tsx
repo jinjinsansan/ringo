@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { getBackendBaseUrl } from "@/lib/backend";
+import { persistAdminToken, readAdminToken } from "@/lib/adminToken";
 
 type DashboardMetrics = {
   user_counts: {
@@ -73,7 +74,7 @@ export default function AdminDashboardPage() {
       } else {
         setSystemMetrics([]);
       }
-      window.localStorage.setItem("adminToken", token);
+      persistAdminToken(token);
     } catch (err) {
       console.error(err);
       setError(err instanceof Error ? err.message : "取得に失敗しました。トークンを確認してください。");
@@ -83,7 +84,7 @@ export default function AdminDashboardPage() {
   }, []);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem("adminToken");
+    const stored = readAdminToken();
     if (stored) {
       setAdminToken(stored);
       void fetchMetrics(stored);
