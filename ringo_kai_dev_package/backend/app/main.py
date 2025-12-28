@@ -395,7 +395,7 @@ def ensure_bucket() -> None:
     if _bucket_ready:
         return
     try:
-        supabase.storage.create_bucket(SCREENSHOT_BUCKET, {"public": True})
+        supabase.storage.create_bucket(SCREENSHOT_BUCKET, {"public": "true"})
     except Exception:
         # bucket already exists or insufficient permissions; proceed regardless
         pass
