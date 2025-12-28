@@ -505,6 +505,37 @@ def ensure_mock_wishlist_item(exclude_user_id: str | None = None) -> None:
     ).execute()
 
 
+def create_mock_purchase(user_id: str) -> dict[str, object]:
+    """Last-resort fallback when no wishlist items exist yet.
+
+    We avoid relying on wishlist_items rows (and potential FK constraints on mock users)
+    by creating a purchase that points to the configured mock wishlist URL.
+    """
+
+    try:
+        normalized = normalize_wishlist_url(MOCK_WISHLIST_URL)
+    except HTTPException:
+        normalized = MOCK_WISHLIST_URL
+
+    purchase_insert = (
+        supabase.table("purchases")
+        .insert(
+            {
+                "purchaser_id": user_id,
+                "target_user_id": user_id,
+                "target_wishlist_url": normalized,
+                "target_item_name": MOCK_WISHLIST_TITLE,
+                "target_item_price": MOCK_WISHLIST_PRICE,
+                "status": "pending",
+            }
+        )
+        .execute()
+    )
+    if not purchase_insert.data:
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "モック購入の作成に失敗しました")
+    return purchase_insert.data[0]
+
+
 def fetch_available_wishlist_items(user_id: str, limit: int = 20) -> list[dict[str, object]]:
     response = (
         supabase.table("wishlist_items")
@@ -1545,7 +1576,18 @@ async def start_purchase(user_id: str = Depends(get_user_id)):
         ensure_mock_wishlist_item(exclude_user_id=user_id)
         items = fetch_available_wishlist_items(user_id, limit=20)
     if not items:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "現在割り当て可能な欲しいものリストがありません。少し待ってから再試行してください。")
+        if not ENABLE_MOCK_WISHLIST_SEED:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "現在割り当て可能な欲しいものリストがありません。少し待ってから再試行してください。")
+
+        purchase = create_mock_purchase(user_id)
+        supabase.table("users").update({"status": "ready_to_purchase", "updated_at": utc_now().isoformat()}).eq("id", user_id).execute()
+        return {
+            "purchase_id": purchase["id"],
+            "alias": "テスト用りんごネーム",
+            "item_name": purchase.get("target_item_name") or MOCK_WISHLIST_TITLE,
+            "price": int(purchase.get("target_item_price") or MOCK_WISHLIST_PRICE),
+            "wishlist_url": purchase.get("target_wishlist_url") or MOCK_WISHLIST_URL,
+        }
 
     selected_item: dict[str, object] | None = None
     purchase: dict[str, object] | None = None
