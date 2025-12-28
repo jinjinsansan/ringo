@@ -80,13 +80,66 @@ export default function DashboardPage() {
   const stats = data?.stats ?? {};
   const apples = data?.apples ?? {};
 
+  // Determine priority action based on user status and stats
+  const getHeroAction = () => {
+    if (!user) return null;
+    
+    // 1. Purchase Obligation
+    if ((stats.purchase_obligation ?? 0) > 0) {
+      return {
+        label: "購入義務があります",
+        desc: "あと " + stats.purchase_obligation + " 回の購入が必要です",
+        button: "購入ページへ",
+        href: "/purchase",
+        color: "from-ringo-red to-ringo-rose",
+        icon: "🎁"
+      };
+    }
+
+    // 2. Pending Verification
+    if (user.status === "verifying") {
+      return {
+        label: "確認待ちです",
+        desc: "スクショの承認をお待ちください",
+        button: "状況を確認",
+        href: "/verification-pending",
+        color: "from-ringo-purple to-ringo-pink",
+        icon: "🕵️‍♀️"
+      };
+    }
+
+    // 3. Purchase Available (Ticket)
+    if ((stats.purchase_available ?? 0) > 0) {
+      return {
+        label: "チケットが使えます",
+        desc: "購入免除チケットを持っています",
+        button: "りんごを引く",
+        href: "/draw",
+        color: "from-ringo-gold to-yellow-400",
+        icon: "🎟"
+      };
+    }
+
+    // 4. Default: Draw Apple
+    return {
+      label: "りんごを引こう！",
+      desc: "24時間のドキドキを楽しもう",
+      button: "抽選ページへ",
+      href: "/draw",
+      color: "from-ringo-rose to-ringo-pink",
+      icon: "🍎"
+    };
+  };
+
+  const heroAction = getHeroAction();
+
   return (
     <UserFlowGuard requiredStatus="first_purchase_completed">
       <div className="min-h-screen bg-ringo-bg pb-20 font-body text-ringo-ink">
         {/* Header */}
         <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-ringo-pink-soft/50 shadow-sm px-6 py-4 flex items-center justify-between">
           <h1 className="font-logo font-bold text-xl text-ringo-rose">🍎 マイページ</h1>
-          <Link href="/logout" className="text-xs text-gray-500 hover:text-ringo-red">ログアウト</Link>
+          {/* NavigationMenu is now global in layout */}
         </header>
 
         <main className="max-w-4xl mx-auto px-4 py-8 space-y-8">
@@ -96,7 +149,28 @@ export default function DashboardPage() {
             <div className="text-center py-12 text-gray-400">データを読み込んでいます...</div>
           ) : (
             <>
-              {/* Main Actions */}
+              {/* Hero Action Card */}
+              {heroAction && (
+                <section className={`bg-gradient-to-br ${heroAction.color} text-white rounded-[2.5rem] p-8 shadow-lg relative overflow-hidden`}>
+                  <div className="absolute top-0 right-0 w-40 h-40 bg-white/20 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3"></div>
+                  <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+                    <div>
+                      <div className="text-sm font-bold opacity-90 mb-1 tracking-wider uppercase">Next Action</div>
+                      <h2 className="text-3xl md:text-4xl font-bold font-logo mb-2">{heroAction.label}</h2>
+                      <p className="text-white/90 text-sm md:text-base">{heroAction.desc}</p>
+                    </div>
+                    <Link 
+                      href={heroAction.href}
+                      className="bg-white text-ringo-rose px-8 py-4 rounded-full font-bold shadow-md hover:scale-105 transition-transform flex items-center gap-2 whitespace-nowrap"
+                    >
+                      <span className="text-2xl">{heroAction.icon}</span>
+                      {heroAction.button}
+                    </Link>
+                  </div>
+                </section>
+              )}
+
+              {/* Main Actions Grid */}
               <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
                  <Link href="/draw" className="group bg-gradient-to-br from-ringo-rose to-ringo-pink text-white p-6 rounded-[2rem] shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]">
                     <div className="text-4xl mb-2 group-hover:animate-bounce">🍎</div>

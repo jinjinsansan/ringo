@@ -3,6 +3,7 @@ import { M_PLUS_Rounded_1c, Zen_Maru_Gothic } from "next/font/google";
 
 import { Chatbot } from "@/components/Chatbot";
 import { AdminToolbar } from "@/components/AdminToolbar";
+import { NavigationMenu } from "@/components/NavigationMenu";
 import "./globals.css";
 
 const bodyFont = M_PLUS_Rounded_1c({
@@ -34,6 +35,9 @@ export default function RootLayout({
     <html lang="ja">
       <body className={`${bodyFont.variable} ${logoFont.variable} antialiased bg-ringo-bg text-ringo-ink`}>
         {children}
+        <div className="fixed top-4 right-4 z-50">
+          <NavigationMenu />
+        </div>
         <AdminToolbar />
         <Chatbot />
       </body>
