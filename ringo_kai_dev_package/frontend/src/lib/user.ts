@@ -41,12 +41,20 @@ const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? "")
 const defaultUser: RingoUser | null = null;
 
 export const useUser = () => {
-  const supabase = useMemo(() => createSupabaseClient(), []);
+  const supabase = useMemo(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+    return createSupabaseClient();
+  }, []);
   const [user, setUser] = useState<RingoUser | null>(defaultUser);
   const [isLoading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchUser = useCallback(async () => {
+    if (!supabase) {
+      return;
+    }
     setLoading(true);
     const {
       data: { session },
@@ -94,6 +102,9 @@ export const useUser = () => {
   }, [supabase]);
 
   useEffect(() => {
+    if (!supabase) {
+      return;
+    }
     fetchUser();
     const {
       data: { subscription },

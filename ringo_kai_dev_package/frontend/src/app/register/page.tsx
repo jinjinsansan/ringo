@@ -18,7 +18,12 @@ const defaultErrors: FormErrors = {};
 function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const supabase = useMemo(() => createSupabaseClient(), []);
+  const supabase = useMemo(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+    return createSupabaseClient();
+  }, []);
   const [isSubmitting, setSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<FormErrors>(defaultErrors);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -64,6 +69,11 @@ function RegisterContent() {
     setFormErrors(errors);
 
     if (Object.keys(errors).length > 0) {
+      return;
+    }
+
+    if (!supabase) {
+      setServerError("Supabase クライアントを初期化できませんでした。ページを再読み込みしてください。");
       return;
     }
 

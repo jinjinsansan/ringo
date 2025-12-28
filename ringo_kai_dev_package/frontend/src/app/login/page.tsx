@@ -9,7 +9,12 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") ?? "/dashboard";
-  const supabase = useMemo(() => createSupabaseClient(), []);
+  const supabase = useMemo(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+    return createSupabaseClient();
+  }, []);
   const [isSubmitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -20,6 +25,11 @@ function LoginContent() {
     const formData = new FormData(event.currentTarget);
     const email = (formData.get("email") as string)?.trim();
     const password = (formData.get("password") as string) ?? "";
+
+    if (!supabase) {
+      setServerError("Supabase クライアントを初期化できませんでした。ページを再読み込みしてください。");
+      return;
+    }
 
     setSubmitting(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });

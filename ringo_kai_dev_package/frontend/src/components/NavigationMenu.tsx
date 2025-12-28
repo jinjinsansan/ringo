@@ -74,7 +74,12 @@ const getDefaultNextAction = (status: UserStatus): NextAction => {
 export function NavigationMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
-  const supabase = createSupabaseClient();
+  const supabase = useMemo(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+    return createSupabaseClient();
+  }, []);
   const { user } = useUser();
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -83,6 +88,9 @@ export function NavigationMenu() {
   const [hasAdminAccess, setHasAdminAccess] = useState(false);
 
   const handleLogout = async () => {
+    if (!supabase) {
+      return;
+    }
     await supabase.auth.signOut();
     window.location.href = "/login";
   };

@@ -1,12 +1,23 @@
 import type { NextRequest } from "next/server";
 
-const RAW_BACKEND_BASE = (process.env.BACKEND_URL ?? process.env.NEXT_PUBLIC_BACKEND_URL ?? "").trim();
+const getBackendBase = () => {
+  const raw = (process.env.BACKEND_URL ?? process.env.NEXT_PUBLIC_BACKEND_URL ?? "").trim();
+  if (!raw) {
+    throw new Error("BACKEND_URL または NEXT_PUBLIC_BACKEND_URL が設定されていません。");
+  }
+  return raw.replace(/\/$/, "");
+};
 
-if (!RAW_BACKEND_BASE) {
-  throw new Error("BACKEND_URL または NEXT_PUBLIC_BACKEND_URL が設定されていません。");
-}
+type RouteParams = { path?: string[] };
+type RouteContext = { params: RouteParams } | { params: Promise<RouteParams> };
 
-const BACKEND_BASE = RAW_BACKEND_BASE.replace(/\/$/, "");
+const resolveParams = async (context: RouteContext): Promise<RouteParams> => {
+  const { params } = context;
+  if (typeof (params as Promise<RouteParams>).then === "function") {
+    return params as Promise<RouteParams>;
+  }
+  return params as RouteParams;
+};
 
 const hopByHopHeaders = new Set([
   "connection",
@@ -21,9 +32,9 @@ const hopByHopHeaders = new Set([
   "host",
 ]);
 
-const buildTargetUrl = (segments: string[] | undefined, search: string) => {
+const buildTargetUrl = (base: string, segments: string[] | undefined, search: string) => {
   const joined = segments?.length ? `/${segments.map((part) => encodeURIComponent(part)).join("/")}` : "";
-  const target = new URL(`${BACKEND_BASE}${joined}`);
+  const target = new URL(`${base}${joined}`);
   target.search = search;
   return target.toString();
 };
@@ -52,8 +63,10 @@ const buildInit = (request: NextRequest): ProxyRequestInit => {
   return init;
 };
 
-const forward = async (request: NextRequest, context: { params: { path?: string[] } }) => {
-  const targetUrl = buildTargetUrl(context.params.path, request.nextUrl.search);
+const forward = async (request: NextRequest, context: RouteContext) => {
+  const params = await resolveParams(context);
+  const backendBase = getBackendBase();
+  const targetUrl = buildTargetUrl(backendBase, params.path, request.nextUrl.search);
   try {
     const response = await fetch(targetUrl, buildInit(request));
     const headers = new Headers(response.headers);
