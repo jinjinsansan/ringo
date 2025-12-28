@@ -104,10 +104,12 @@ api = FastAPI(title="Ringo Kai API", version="0.2.0")
 app = api
 
 _frontend_origins_raw = os.environ.get("FRONTEND_ORIGINS")
-if _frontend_origins_raw is None or not _frontend_origins_raw.strip():
-    _frontend_origins_raw = "http://localhost:3000,https://ringokai.app,https://www.ringokai.app"
+frontend_origins = [origin.strip() for origin in (_frontend_origins_raw or "").split(",") if origin.strip()]
 
-frontend_origins = [origin.strip() for origin in _frontend_origins_raw.split(",") if origin.strip()]
+# Always allow the canonical frontend origins to avoid misconfiguration causing browser-level network failures.
+for origin in ("http://localhost:3000", "https://ringokai.app", "https://www.ringokai.app"):
+    if origin not in frontend_origins:
+        frontend_origins.append(origin)
 
 api.add_middleware(
     CORSMiddleware,

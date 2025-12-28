@@ -20,7 +20,75 @@ type CurrentPurchase = {
 };
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const TARGET_OPTIMIZED_SIZE = 1_500_000; // 1.5MB
+const MAX_DIMENSION = 1600;
 const ACCEPTED_TYPES = ["image/png", "image/jpeg"];
+
+type LoadedImage = {
+  source: CanvasImageSource;
+  width: number;
+  height: number;
+};
+
+const loadImageSource = async (file: File): Promise<LoadedImage> => {
+  if (typeof createImageBitmap === "function") {
+    const bitmap = await createImageBitmap(file);
+    return { source: bitmap, width: bitmap.width, height: bitmap.height };
+  }
+
+  const url = URL.createObjectURL(file);
+  try {
+    const img = document.createElement("img");
+    img.decoding = "async";
+    img.src = url;
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error("画像の読み込みに失敗しました"));
+    });
+
+    const width = img.naturalWidth || img.width;
+    const height = img.naturalHeight || img.height;
+    return { source: img, width, height };
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+};
+
+const compressScreenshot = async (input: File) => {
+  if (input.type === "image/jpeg" && input.size <= TARGET_OPTIMIZED_SIZE) return input;
+
+  const loaded = await loadImageSource(input);
+  const { width, height } = loaded;
+  const scale = Math.min(1, MAX_DIMENSION / Math.max(width, height));
+  const targetW = Math.max(1, Math.round(width * scale));
+  const targetH = Math.max(1, Math.round(height * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = targetW;
+  canvas.height = targetH;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("画像の変換に失敗しました");
+  ctx.drawImage(loaded.source, 0, 0, targetW, targetH);
+
+  let quality = 0.9;
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (out) => (out ? resolve(out) : reject(new Error("画像の変換に失敗しました"))),
+        "image/jpeg",
+        quality
+      );
+    });
+
+    const file = new File([blob], "screenshot.jpg", { type: "image/jpeg" });
+    if (file.size <= TARGET_OPTIMIZED_SIZE || quality <= 0.55) {
+      return file;
+    }
+    quality -= 0.1;
+  }
+
+  return input;
+};
 
 export default function UploadScreenshotPage() {
   const router = useRouter();
@@ -31,6 +99,7 @@ export default function UploadScreenshotPage() {
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
   const [isLoading, setLoading] = useState(true);
   const [isUploading, setUploading] = useState(false);
+  const [isOptimizing, setOptimizing] = useState(false);
   const [isSubmitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -71,7 +140,7 @@ export default function UploadScreenshotPage() {
     };
   }, [previewUrl]);
 
-  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     setError(null);
     setSuccess(null);
     const selected = event.target.files?.[0];
@@ -88,10 +157,30 @@ export default function UploadScreenshotPage() {
       setError("ファイルサイズは 10MB 以下にしてください。");
       return;
     }
-    setFile(selected);
+
     setUploadedUrl(null);
-    const newPreview = URL.createObjectURL(selected);
-    setPreviewUrl(newPreview);
+    setOptimizing(true);
+    try {
+      const optimized = await compressScreenshot(selected);
+      setFile(optimized);
+
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      const newPreview = URL.createObjectURL(optimized);
+      setPreviewUrl(newPreview);
+
+      if (optimized.size > TARGET_OPTIMIZED_SIZE) {
+        setSuccess("画像を最適化しました。アップロードしてください。");
+      }
+    } catch (err) {
+      console.error(err);
+      setFile(selected);
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      const newPreview = URL.createObjectURL(selected);
+      setPreviewUrl(newPreview);
+      setError("画像の最適化に失敗しました。そのままアップロードをお試しください。");
+    } finally {
+      setOptimizing(false);
+    }
   };
 
   const uploadFile = async () => {
@@ -113,7 +202,11 @@ export default function UploadScreenshotPage() {
       setSuccess("アップロードが完了しました！最後に「提出する」ボタンを押してください。");
     } catch (err) {
       console.error(err);
-      setError(err instanceof Error ? err.message : "アップロードに失敗しました。");
+      if (err instanceof TypeError && String(err.message).toLowerCase().includes("fetch")) {
+        setError("アップロードに失敗しました（通信エラー）。画像サイズが大きい場合は小さくして再度お試しください。");
+      } else {
+        setError(err instanceof Error ? err.message : "アップロードに失敗しました。");
+      }
     } finally {
       setUploading(false);
     }
@@ -216,10 +309,10 @@ export default function UploadScreenshotPage() {
                      <button
                       type="button"
                       onClick={uploadFile}
-                      disabled={isUploading}
+                      disabled={isUploading || isOptimizing}
                       className="btn-secondary w-full"
                     >
-                      {isUploading ? "アップロード中..." : "1. 画像をアップロード"}
+                      {isOptimizing ? "画像を最適化中..." : isUploading ? "アップロード中..." : "1. 画像をアップロード"}
                     </button>
                   )}
                   
