@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 
 import { UserFlowGuard } from "@/components/UserFlowGuard";
 import { FlowLayout } from "@/components/FlowLayout";
@@ -22,7 +21,6 @@ type PurchaseAssignment = WishlistAssignment & {
 };
 
 export default function PurchasePage() {
-  const router = useRouter();
   const { user, refresh } = useUser();
   const [assignment, setAssignment] = useState<PurchaseAssignment | null>(null);
   const [isUpdating, setUpdating] = useState(false);

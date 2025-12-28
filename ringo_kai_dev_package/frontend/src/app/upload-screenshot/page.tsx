@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Image from "next/image";
 import type { ChangeEvent } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -161,71 +161,84 @@ export default function UploadScreenshotPage() {
         showBack
       >
         <div className="space-y-6">
-          {/* Purchase Summary */}
-          {purchase && (
-            <div className="bg-ringo-bg/50 rounded-xl p-4 border border-ringo-pink-soft/50 flex items-center justify-between text-sm">
-              <div>
-                <span className="text-gray-500 text-xs block">購入した商品</span>
-                <span className="font-bold text-ringo-ink">{purchase.itemName}</span>
-              </div>
-              <div className="text-right">
-                <span className="text-gray-500 text-xs block">金額</span>
-                <span className="font-bold text-ringo-red">¥{purchase.price.toLocaleString()}</span>
-              </div>
-            </div>
-          )}
-
-          {error && <p className="bg-ringo-red/10 text-ringo-red p-3 rounded-xl text-sm text-center">{error}</p>}
-          {success && <p className="bg-ringo-green/10 text-ringo-green p-3 rounded-xl text-sm text-center font-bold">{success}</p>}
-
-          <div className="space-y-4">
-            <div className="border-2 border-dashed border-ringo-pink-soft hover:border-ringo-rose bg-white/50 rounded-2xl p-6 transition-colors text-center cursor-pointer relative">
-               <input
-                type="file"
-                accept="image/png, image/jpeg"
-                onChange={handleFileChange}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              />
-              {previewUrl ? (
-                 <div className="relative h-64 w-full">
-                    <img src={previewUrl} alt="プレビュー" className="h-full w-full object-contain rounded-lg" />
-                 </div>
-              ) : (
-                <div className="py-8">
-                  <div className="text-4xl mb-2">📷</div>
-                  <p className="font-bold text-ringo-rose">写真をアップロード</p>
-                  <p className="text-xs text-gray-400 mt-1">タップして画像を選択</p>
-                  <p className="text-[10px] text-gray-400 mt-2">※ 注文番号が写っていることを確認してね</p>
+          {isLoading ? (
+            <div className="py-10 text-center text-sm text-gray-400">購入情報を読み込み中...</div>
+          ) : (
+            <>
+              {/* Purchase Summary */}
+              {purchase && (
+                <div className="bg-ringo-bg/50 rounded-xl p-4 border border-ringo-pink-soft/50 flex items-center justify-between text-sm">
+                  <div>
+                    <span className="text-gray-500 text-xs block">購入した商品</span>
+                    <span className="font-bold text-ringo-ink">{purchase.itemName}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-gray-500 text-xs block">金額</span>
+                    <span className="font-bold text-ringo-red">¥{purchase.price.toLocaleString()}</span>
+                  </div>
                 </div>
               )}
-            </div>
 
-            <div className="flex flex-col gap-3">
-              {file && !uploadedUrl && (
-                 <button
-                  type="button"
-                  onClick={uploadFile}
-                  disabled={isUploading}
-                  className="btn-secondary w-full"
-                >
-                  {isUploading ? "アップロード中..." : "1. 画像をアップロード"}
-                </button>
-              )}
-              
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={!uploadedUrl || isSubmitting}
-                className={`w-full py-4 rounded-full font-bold shadow-lg transition-all ${
-                  uploadedUrl && !isSubmitting 
-                    ? "bg-gradient-to-r from-ringo-red to-ringo-rose text-white hover:scale-105" 
-                    : "bg-gray-300 text-white cursor-not-allowed"
-                }`}
-              >
-                {isSubmitting ? "送信中..." : "2. 確認へ送信する"}
-              </button>
-            </div>
-          </div>
+              {error && <p className="bg-ringo-red/10 text-ringo-red p-3 rounded-xl text-sm text-center">{error}</p>}
+              {success && <p className="bg-ringo-green/10 text-ringo-green p-3 rounded-xl text-sm text-center font-bold">{success}</p>}
+
+              <div className="space-y-4">
+                <div className="border-2 border-dashed border-ringo-pink-soft hover:border-ringo-rose bg-white/50 rounded-2xl p-6 transition-colors text-center cursor-pointer relative">
+                   <input
+                    type="file"
+                    accept="image/png, image/jpeg"
+                    onChange={handleFileChange}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  {previewUrl ? (
+                     <div className="relative h-64 w-full">
+                        <Image
+                          src={previewUrl}
+                          alt="プレビュー"
+                          fill
+                          sizes="(max-width: 768px) 100vw, 480px"
+                          className="object-contain rounded-lg"
+                          unoptimized
+                        />
+                     </div>
+                  ) : (
+                    <div className="py-8">
+                      <div className="text-4xl mb-2">📷</div>
+                      <p className="font-bold text-ringo-rose">写真をアップロード</p>
+                      <p className="text-xs text-gray-400 mt-1">タップして画像を選択</p>
+                      <p className="text-[10px] text-gray-400 mt-2">※ 注文番号が写っていることを確認してね</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  {file && !uploadedUrl && (
+                     <button
+                      type="button"
+                      onClick={uploadFile}
+                      disabled={isUploading}
+                      className="btn-secondary w-full"
+                    >
+                      {isUploading ? "アップロード中..." : "1. 画像をアップロード"}
+                    </button>
+                  )}
+                  
+                  <button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={!uploadedUrl || isSubmitting}
+                    className={`w-full py-4 rounded-full font-bold shadow-lg transition-all ${
+                      uploadedUrl && !isSubmitting 
+                        ? "bg-gradient-to-r from-ringo-red to-ringo-rose text-white hover:scale-105" 
+                        : "bg-gray-300 text-white cursor-not-allowed"
+                    }`}
+                  >
+                    {isSubmitting ? "送信中..." : "2. 確認へ送信する"}
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </FlowLayout>
     </UserFlowGuard>

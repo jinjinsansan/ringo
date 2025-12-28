@@ -3,9 +3,9 @@
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useUser, statusOrder } from "@/lib/user";
+import { useUser, statusOrder, type UserStatus } from "@/lib/user";
 
-const steps = [
+const steps: Array<{ label: string; path: string; status: UserStatus }> = [
   { label: "規約", path: "/terms", status: "registered" },
   { label: "説明", path: "/tutorial", status: "terms_agreed" },
   { label: "購入", path: "/purchase", status: "tutorial_completed" },
@@ -42,7 +42,7 @@ export function FlowLayout({ currentStepIndex, children, title, subtitle, onBack
     // Check if user's actual status allows access to this step
     const targetStatus = steps[stepIndex].status;
     const userStatusIndex = statusOrder.indexOf(user.status);
-    const targetStatusIndex = statusOrder.indexOf(targetStatus as any);
+    const targetStatusIndex = statusOrder.indexOf(targetStatus);
     
     return userStatusIndex >= targetStatusIndex;
   };
@@ -85,7 +85,6 @@ export function FlowLayout({ currentStepIndex, children, title, subtitle, onBack
                   
                   // Wrap in Link only if accessible or completed
                   const isLink = canAccess;
-                  const wrapperProps = isLink ? { href: step.path } : {};
 
                   if (isLink) {
                     return (
