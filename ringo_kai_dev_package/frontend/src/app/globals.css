@@ -91,3 +91,17 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: 0 10px 40px -10px rgba(255, 182, 217, 0.3);
   }
 }
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #FFE4E1;
+  border-radius: 20px;
+}
+

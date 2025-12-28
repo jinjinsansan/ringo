@@ -45,7 +45,7 @@ export default function TermsPage() {
         subtitle="みんなが安心して楽しめるように、大切なお約束です。"
       >
         <div className="space-y-6">
-          <section className="bg-white/50 rounded-2xl p-6 border border-ringo-pink-soft/50 text-sm leading-relaxed max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-ringo-pink-soft scrollbar-track-transparent">
+          <section className="bg-white/50 rounded-2xl p-6 border border-ringo-pink-soft/50 text-sm leading-relaxed max-h-[400px] overflow-y-auto custom-scrollbar">
             <h2 className="text-lg font-bold text-ringo-rose mb-4 border-b border-ringo-pink-soft pb-2">
               りんご会♪ 利用規約（抜粋）
             </h2>

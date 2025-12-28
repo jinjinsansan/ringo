@@ -65,6 +65,16 @@ const probabilityOrder: { key: AppleType; label: string; color: string }[] = [
   { key: "poison", label: "毒りんご", color: "bg-purple-600" },
 ];
 
+const defaultProbabilities = {
+  probabilities: {
+    bronze: 0.55,
+    silver: 0.25,
+    gold: 0.12,
+    red: 0.05,
+    poison: 0.03,
+  },
+};
+
 export default function DrawPage() {
   const { user } = useUser();
   const [currentApple, setCurrentApple] = useState<AppleRevealResponse | null>(null);
@@ -294,26 +304,27 @@ export default function DrawPage() {
             </h3>
             
             <div className="space-y-3">
-              {(probabilityInfo
-                ? probabilityOrder
-                : []
-              ).map(({ key, label, color }) => {
-                const percent = probabilityInfo?.probabilities[key] ? probabilityInfo.probabilities[key] * 100 : 0;
-                return (
-                  <div key={key} className="space-y-1">
-                    <div className="flex justify-between text-xs text-gray-600">
-                      <span>{label}</span>
-                      <span className="font-bold">{percent.toFixed(1)}%</span>
+              {(probabilityInfo || defaultProbabilities).probabilities &&
+                probabilityOrder.map(({ key, label, color }) => {
+                  const info = probabilityInfo || defaultProbabilities;
+                  const percent = info.probabilities[key]
+                    ? info.probabilities[key] * 100
+                    : 0;
+                  return (
+                    <div key={key} className="space-y-1">
+                      <div className="flex justify-between text-xs text-gray-600">
+                        <span>{label}</span>
+                        <span className="font-bold">{percent.toFixed(1)}%</span>
+                      </div>
+                      <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full ${color}`} 
+                          style={{ width: `${percent}%` }}
+                        ></div>
+                      </div>
                     </div>
-                    <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full ${color}`} 
-                        style={{ width: `${percent}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
             </div>
           </section>
 

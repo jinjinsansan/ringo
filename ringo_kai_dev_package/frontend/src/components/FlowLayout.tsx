@@ -49,12 +49,12 @@ export function FlowLayout({ currentStepIndex, children, title, subtitle, onBack
                   <span className="text-lg">←</span> 戻る
                 </button>
              ) : (
-               <div className="w-10"></div> // Spacer
+               <div className="w-10"></div>
              )}
              <div className="font-logo font-bold text-ringo-ink text-center text-sm sm:text-base">
                ステップ {currentStepIndex + 1} / {steps.length}
              </div>
-             <div className="w-10"></div> // Spacer
+             <div className="w-10"></div>
           </div>
 
           {/* Progress Bar */}
