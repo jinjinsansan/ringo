@@ -71,24 +71,28 @@ export function FlowLayout({ currentStepIndex, children, title, subtitle, onBack
                   const isCompleted = idx < currentStepIndex;
                   
                   return (
-                    <div key={idx} className="flex flex-col items-center gap-1">
+                    <Link 
+                      key={idx} 
+                      href={step.path}
+                      className="flex flex-col items-center gap-1 group cursor-pointer"
+                    >
                       <div 
                         className={`
                           w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold border-2 transition-all duration-300
                           ${isActive 
                             ? "bg-ringo-rose border-ringo-rose text-white scale-110 shadow-lg shadow-ringo-rose/30" 
                             : isCompleted 
-                              ? "bg-ringo-pink text-white border-ringo-pink" 
-                              : "bg-white border-ringo-pink-soft text-gray-300"
+                              ? "bg-ringo-pink text-white border-ringo-pink group-hover:bg-ringo-rose group-hover:border-ringo-rose" 
+                              : "bg-white border-gray-300 text-gray-500 group-hover:border-ringo-pink group-hover:text-ringo-pink"
                           }
                         `}
                       >
                         {isCompleted ? "✓" : idx + 1}
                       </div>
-                      <span className={`text-[10px] sm:text-xs font-medium ${isActive ? "text-ringo-rose" : "text-gray-400"} hidden sm:block`}>
+                      <span className={`text-[10px] sm:text-xs font-medium transition-colors ${isActive ? "text-ringo-rose" : "text-gray-500 group-hover:text-ringo-pink"} hidden sm:block`}>
                         {step.label}
                       </span>
-                    </div>
+                    </Link>
                   );
                 })}
              </div>
