@@ -34,7 +34,7 @@ export default function RootLayout({
     <html lang="ja">
       <body className={`${bodyFont.variable} ${logoFont.variable} antialiased bg-ringo-bg text-ringo-ink`}>
         {children}
-        <div className="fixed top-4 right-4 z-[9999]">
+        <div className="fixed top-20 right-6 z-[9999]">
           <NavigationMenu />
         </div>
         <Chatbot />
