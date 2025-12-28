@@ -28,12 +28,18 @@ type LoadedImage = {
   source: CanvasImageSource;
   width: number;
   height: number;
+  cleanup?: () => void;
 };
 
 const loadImageSource = async (file: File): Promise<LoadedImage> => {
   if (typeof createImageBitmap === "function") {
     const bitmap = await createImageBitmap(file);
-    return { source: bitmap, width: bitmap.width, height: bitmap.height };
+    return {
+      source: bitmap,
+      width: bitmap.width,
+      height: bitmap.height,
+      cleanup: () => bitmap.close(),
+    };
   }
 
   const url = URL.createObjectURL(file);
@@ -68,7 +74,11 @@ const compressScreenshot = async (input: File) => {
   canvas.height = targetH;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("画像の変換に失敗しました");
-  ctx.drawImage(loaded.source, 0, 0, targetW, targetH);
+  try {
+    ctx.drawImage(loaded.source, 0, 0, targetW, targetH);
+  } finally {
+    loaded.cleanup?.();
+  }
 
   let quality = 0.9;
   for (let attempt = 0; attempt < 6; attempt += 1) {
@@ -168,7 +178,7 @@ export default function UploadScreenshotPage() {
       const newPreview = URL.createObjectURL(optimized);
       setPreviewUrl(newPreview);
 
-      if (optimized.size > TARGET_OPTIMIZED_SIZE) {
+      if (optimized.size <= TARGET_OPTIMIZED_SIZE) {
         setSuccess("画像を最適化しました。アップロードしてください。");
       }
     } catch (err) {
