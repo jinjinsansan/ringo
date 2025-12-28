@@ -63,6 +63,15 @@ ALLOWED_MIMES = {"image/png", "image/jpeg"}
 _bucket_ready = False
 ADMIN_API_KEY = os.environ.get("ADMIN_API_KEY")
 
+ENABLE_MOCK_WISHLIST_SEED = os.environ.get("ENABLE_MOCK_WISHLIST_SEED", "true").lower() in {"1", "true", "yes"}
+MOCK_WISHLIST_URL = os.environ.get(
+    "MOCK_WISHLIST_URL",
+    "https://www.amazon.jp/hz/wishlist/ls/33U0W5W9VAU29?ref_=wl_share",
+)
+MOCK_WISHLIST_TITLE = os.environ.get("MOCK_WISHLIST_TITLE", "テスト用：欲しいものリスト")
+MOCK_WISHLIST_PRICE = int(os.environ.get("MOCK_WISHLIST_PRICE", "3500"))
+MOCK_TARGET_USER_ID = os.environ.get("MOCK_TARGET_USER_ID", "00000000-0000-0000-0000-000000000001")
+
 WISHLIST_ALLOWED_HOSTS = {
     "amazon.co.jp",
     "www.amazon.co.jp",
@@ -453,6 +462,47 @@ def upsert_wishlist_item(user_id: str, title: str | None, price: int, url: str) 
 
 def release_wishlist_assignment(purchase_id: int) -> None:
     supabase.table("wishlist_items").update({"assigned_purchase_id": None}).eq("assigned_purchase_id", purchase_id).execute()
+
+
+def ensure_mock_wishlist_item(exclude_user_id: str | None = None) -> None:
+    if not ENABLE_MOCK_WISHLIST_SEED:
+        return
+    if exclude_user_id and exclude_user_id == MOCK_TARGET_USER_ID:
+        return
+
+    now = utc_now().isoformat()
+    existing_user = supabase.table("users").select("id").eq("id", MOCK_TARGET_USER_ID).limit(1).execute()
+    if not existing_user.data:
+        supabase.table("users").insert(
+            {
+                "id": MOCK_TARGET_USER_ID,
+                "email": "mock-target@ringo-kai.local",
+                "status": "active",
+                "created_at": now,
+                "updated_at": now,
+            }
+        ).execute()
+
+    existing_item = supabase.table("wishlist_items").select("id").eq("user_id", MOCK_TARGET_USER_ID).limit(1).execute()
+    if existing_item.data:
+        return
+
+    try:
+        normalized = normalize_wishlist_url(MOCK_WISHLIST_URL)
+    except HTTPException:
+        normalized = MOCK_WISHLIST_URL
+
+    supabase.table("wishlist_items").insert(
+        {
+            "user_id": MOCK_TARGET_USER_ID,
+            "title": MOCK_WISHLIST_TITLE,
+            "price": MOCK_WISHLIST_PRICE,
+            "url": normalized,
+            "assigned_purchase_id": None,
+            "created_at": now,
+            "updated_at": now,
+        }
+    ).execute()
 
 
 def fetch_available_wishlist_items(user_id: str, limit: int = 20) -> list[dict[str, object]]:
@@ -1490,6 +1540,9 @@ async def start_purchase(user_id: str = Depends(get_user_id)):
     items = fetch_available_wishlist_items(user_id, limit=20)
     if not items:
         await seed_wishlist_items_from_users(limit=50, exclude_user_id=user_id)
+        items = fetch_available_wishlist_items(user_id, limit=20)
+    if not items:
+        ensure_mock_wishlist_item(exclude_user_id=user_id)
         items = fetch_available_wishlist_items(user_id, limit=20)
     if not items:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "現在割り当て可能な欲しいものリストがありません。少し待ってから再試行してください。")
