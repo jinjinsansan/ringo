@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { getBackendBaseUrl } from "@/lib/backend";
 
 type AdminUserRow = {
   id: string;
@@ -33,7 +34,7 @@ const STATUS_OPTIONS = [
   "active",
 ];
 
-const backendBase = (process.env.NEXT_PUBLIC_BACKEND_URL ?? "").replace(/\/$/, "");
+const backendBase = getBackendBaseUrl();
 
 export default function AdminUsersPage() {
   const [adminToken, setAdminToken] = useState("");

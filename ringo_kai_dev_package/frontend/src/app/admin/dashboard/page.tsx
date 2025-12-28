@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { getBackendBaseUrl } from "@/lib/backend";
 
 type DashboardMetrics = {
   user_counts: {
@@ -35,7 +36,7 @@ type SystemMetricEntry = {
   poison_probability: number;
 };
 
-const backendBase = (process.env.NEXT_PUBLIC_BACKEND_URL ?? "").replace(/\/$/, "");
+const backendBase = getBackendBaseUrl();
 
 export default function AdminDashboardPage() {
   const [adminToken, setAdminToken] = useState("");

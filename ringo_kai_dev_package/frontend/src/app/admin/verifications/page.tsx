@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { getBackendBaseUrl } from "@/lib/backend";
 
 type VerificationRow = {
   id: number;
@@ -18,7 +19,7 @@ type VerificationRow = {
   target_wishlist_url?: string;
 };
 
-const backendBase = (process.env.NEXT_PUBLIC_BACKEND_URL ?? "").replace(/\/$/, "");
+const backendBase = getBackendBaseUrl();
 
 export default function AdminVerificationsPage() {
   const [adminToken, setAdminToken] = useState<string>("");

@@ -1,12 +1,12 @@
 import type { UserStatus } from "@/lib/user";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "") ?? "";
+import { buildBackendUrl } from "@/lib/backend";
 
 type UpdateResult = {
   error: { message: string } | null;
 };
 
-const buildUrl = (path: string) => `${API_BASE_URL}${path}`;
+const buildUrl = (path: string) => buildBackendUrl(path);
 
 export type ApiError = Error & {
   status?: number;

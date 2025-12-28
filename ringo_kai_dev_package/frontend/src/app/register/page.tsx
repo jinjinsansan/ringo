@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useMemo, useState } from "react";
 import { createSupabaseClient } from "@/lib/supabase/client";
+import { getBackendBaseUrl } from "@/lib/backend";
 
 type FormErrors = {
   email?: string;
@@ -108,7 +109,8 @@ function RegisterContent() {
 
       if (referralCode) {
         try {
-          const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "") ?? ""}/api/referral/claim`, {
+          const backendBase = getBackendBaseUrl();
+          const response = await fetch(`${backendBase}/api/referral/claim`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

@@ -7,6 +7,7 @@ import { AppleReveal, AppleType } from "@/components/AppleReveal";
 import { UserFlowGuard } from "@/components/UserFlowGuard";
 import { FlowLayout } from "@/components/FlowLayout";
 import { useUser } from "@/lib/user";
+import { getBackendBaseUrl } from "@/lib/backend";
 
 type AppleStatus = "pending" | "revealed";
 
@@ -86,7 +87,7 @@ export default function DrawPage() {
   const [probabilityInfo, setProbabilityInfo] = useState<ProbabilityResponse | null>(null);
   const [showTechInfo, setShowTechInfo] = useState(false);
 
-  const apiBase = useMemo(() => process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "") ?? "", []);
+  const apiBase = useMemo(() => getBackendBaseUrl(), []);
 
   const mapApple = useCallback((payload: AppleApiResponse): AppleRevealResponse => ({
     id: String(payload.id),

@@ -103,7 +103,11 @@ _rtp_cache: dict[str, float | datetime] | None = None
 api = FastAPI(title="Ringo Kai API", version="0.2.0")
 app = api
 
-frontend_origins = [origin.strip() for origin in os.environ.get("FRONTEND_ORIGINS", "http://localhost:3000").split(",") if origin.strip()]
+_frontend_origins_raw = os.environ.get("FRONTEND_ORIGINS")
+if _frontend_origins_raw is None or not _frontend_origins_raw.strip():
+    _frontend_origins_raw = "http://localhost:3000,https://ringokai.app,https://www.ringokai.app"
+
+frontend_origins = [origin.strip() for origin in _frontend_origins_raw.split(",") if origin.strip()]
 
 api.add_middleware(
     CORSMiddleware,

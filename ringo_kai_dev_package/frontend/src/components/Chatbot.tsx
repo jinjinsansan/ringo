@@ -4,6 +4,7 @@ import Image from "next/image";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import { useUser } from "@/lib/user";
+import { getBackendBaseUrl } from "@/lib/backend";
 
 type Message = {
   id: string;
@@ -45,7 +46,7 @@ export function Chatbot() {
   const [error, setError] = useState<string | null>(null);
 
   const currentStatus = user?.status ?? "guest";
-  const backendBase = (process.env.NEXT_PUBLIC_BACKEND_URL ?? "").replace(/\/$/, "");
+  const backendBase = getBackendBaseUrl();
   const chatbotEndpoint = backendBase ? `${backendBase}/api/chatbot` : "/api/chatbot";
 
   const greeting = useMemo(() => initialPromptByStatus[currentStatus] ?? initialPromptByStatus.guest, [currentStatus]);
