@@ -3,14 +3,15 @@
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useUser, statusOrder } from "@/lib/user";
 
 const steps = [
-  { label: "規約", path: "/terms" },
-  { label: "説明", path: "/tutorial" },
-  { label: "購入", path: "/purchase" },
-  { label: "報告", path: "/upload-screenshot" },
-  { label: "登録", path: "/register-wishlist" },
-  { label: "抽選", path: "/draw" },
+  { label: "規約", path: "/terms", status: "registered" },
+  { label: "説明", path: "/tutorial", status: "terms_agreed" },
+  { label: "購入", path: "/purchase", status: "tutorial_completed" },
+  { label: "報告", path: "/upload-screenshot", status: "ready_to_purchase" },
+  { label: "登録", path: "/register-wishlist", status: "first_purchase_completed" },
+  { label: "抽選", path: "/draw", status: "ready_to_draw" },
 ];
 
 type Props = {
@@ -24,15 +25,26 @@ type Props = {
 
 export function FlowLayout({ currentStepIndex, children, title, subtitle, onBack, showBack }: Props) {
   const router = useRouter();
+  const { user } = useUser();
 
   const handleBack = () => {
     if (onBack) {
       onBack();
     } else if (currentStepIndex > 0) {
-      // Default back behavior: go to previous step's path
-      // Note: This relies on the user having permission to go back, which UserFlowGuard permits (current >= required)
       router.push(steps[currentStepIndex - 1].path);
     }
+  };
+
+  const isStepAccessible = (stepIndex: number) => {
+    if (!user) return false;
+    if (stepIndex <= currentStepIndex) return true;
+    
+    // Check if user's actual status allows access to this step
+    const targetStatus = steps[stepIndex].status;
+    const userStatusIndex = statusOrder.indexOf(user.status);
+    const targetStatusIndex = statusOrder.indexOf(targetStatus as any);
+    
+    return userStatusIndex >= targetStatusIndex;
   };
 
   return (
@@ -69,12 +81,17 @@ export function FlowLayout({ currentStepIndex, children, title, subtitle, onBack
                 {steps.map((step, idx) => {
                   const isActive = idx === currentStepIndex;
                   const isCompleted = idx < currentStepIndex;
+                  const canAccess = isStepAccessible(idx);
                   
+                  // Wrap in Link only if accessible or completed
+                  const Wrapper = canAccess ? Link : "div";
+                  const wrapperProps = canAccess ? { href: step.path } : {};
+
                   return (
-                    <Link 
+                    <Wrapper 
                       key={idx} 
-                      href={step.path}
-                      className="flex flex-col items-center gap-1 group cursor-pointer"
+                      {...wrapperProps}
+                      className={`flex flex-col items-center gap-1 group ${canAccess ? "cursor-pointer" : "cursor-not-allowed opacity-60"}`}
                     >
                       <div 
                         className={`
@@ -83,16 +100,24 @@ export function FlowLayout({ currentStepIndex, children, title, subtitle, onBack
                             ? "bg-ringo-rose border-ringo-rose text-white scale-110 shadow-lg shadow-ringo-rose/30" 
                             : isCompleted 
                               ? "bg-ringo-pink text-white border-ringo-pink group-hover:bg-ringo-rose group-hover:border-ringo-rose" 
-                              : "bg-white border-gray-300 text-gray-500 group-hover:border-ringo-pink group-hover:text-ringo-pink"
+                              : canAccess
+                                ? "bg-white border-ringo-pink-soft text-ringo-pink group-hover:border-ringo-pink"
+                                : "bg-white border-gray-300 text-gray-400"
                           }
                         `}
                       >
                         {isCompleted ? "✓" : idx + 1}
                       </div>
-                      <span className={`text-[10px] sm:text-xs font-medium transition-colors ${isActive ? "text-ringo-rose" : "text-gray-500 group-hover:text-ringo-pink"} hidden sm:block`}>
+                      <span className={`
+                        text-[10px] sm:text-xs font-medium transition-colors hidden sm:block
+                        ${isActive ? "text-ringo-rose" : ""}
+                        ${isCompleted ? "text-ringo-pink group-hover:text-ringo-rose" : ""}
+                        ${!isActive && !isCompleted && canAccess ? "text-ringo-pink/70 group-hover:text-ringo-pink" : ""}
+                        ${!canAccess ? "text-gray-400" : ""}
+                      `}>
                         {step.label}
                       </span>
-                    </Link>
+                    </Wrapper>
                   );
                 })}
              </div>
