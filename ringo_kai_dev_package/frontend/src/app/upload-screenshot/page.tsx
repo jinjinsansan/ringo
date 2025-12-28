@@ -225,12 +225,31 @@ export default function UploadScreenshotPage() {
         },
         body: formData,
       });
-      const data = await response.json().catch(() => null);
+
+      const rawBody = await response.text().catch(() => "");
+      let data: unknown = null;
+      if (rawBody) {
+        try {
+          data = JSON.parse(rawBody) as unknown;
+        } catch {
+          data = null;
+        }
+      }
       if (!response.ok) {
-        const message = data?.detail ?? data?.message ?? "アップロードに失敗しました。";
+        const payload = typeof data === "object" && data !== null ? (data as Record<string, unknown>) : null;
+        const message =
+          (typeof payload?.detail === "string" && payload.detail) ||
+          (typeof payload?.message === "string" && payload.message) ||
+          `アップロードに失敗しました。(HTTP ${response.status})`;
         throw new Error(message);
       }
-      setUploadedUrl(data.screenshot_url);
+
+      const payload = typeof data === "object" && data !== null ? (data as Record<string, unknown>) : null;
+      const screenshotUrl = payload && typeof payload.screenshot_url === "string" ? payload.screenshot_url : "";
+      if (!screenshotUrl) {
+        throw new Error("アップロードに失敗しました。(不正なレスポンス)");
+      }
+      setUploadedUrl(screenshotUrl);
       setSuccess("アップロードが完了しました！最後に「提出する」ボタンを押してください。");
     } catch (err) {
       console.error(err);
