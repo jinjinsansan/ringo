@@ -9,12 +9,6 @@ export default function Home() {
         <h1 className="text-2xl font-bold font-logo text-ringo-rose tracking-tight flex items-center gap-1">
           りんご会<span className="text-ringo-red text-3xl leading-none pt-1">♪</span>
         </h1>
-        <Link
-          href="/login"
-          className="text-ringo-rose font-bold hover:text-ringo-red transition-colors font-logo text-sm sm:text-base border-b-2 border-transparent hover:border-ringo-red pb-0.5"
-        >
-          ログイン
-        </Link>
       </header>
 
       {/* Hero Section */}
