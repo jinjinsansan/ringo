@@ -48,9 +48,21 @@ export const useUser = () => {
 
   const fetchUser = useCallback(async () => {
     setLoading(true);
-    const { data, error: authError } = await supabase.auth.getUser();
-    if (authError || !data.user) {
-      setError(authError?.message ?? "ユーザー情報を取得できませんでした");
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError) {
+      setError(sessionError.message);
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
+    const authUser = session?.user ?? null;
+    if (!authUser) {
+      setError(null);
       setUser(null);
       setLoading(false);
       return;
@@ -59,7 +71,7 @@ export const useUser = () => {
     const { data: profile, error: profileError } = await supabase
       .from("users")
       .select("status, email")
-      .eq("id", data.user.id)
+      .eq("id", authUser.id)
       .single();
 
     if (profileError) {
@@ -70,10 +82,10 @@ export const useUser = () => {
 
     const statusValue = profile?.status as UserStatus | undefined;
     const safeStatus = statusValue && statusOrder.includes(statusValue) ? statusValue : "registered";
-    const email = profile?.email ?? data.user.email ?? "";
+    const email = profile?.email ?? authUser.email ?? "";
     const normalizedEmail = email.toLowerCase();
     setUser({
-      id: data.user.id,
+      id: authUser.id,
       email,
       status: safeStatus,
       isAdmin: normalizedEmail ? adminEmails.includes(normalizedEmail) : false,
@@ -85,8 +97,13 @@ export const useUser = () => {
     fetchUser();
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
-      fetchUser();
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        fetchUser();
+      } else {
+        setUser(null);
+        setLoading(false);
+      }
     });
 
     return () => {

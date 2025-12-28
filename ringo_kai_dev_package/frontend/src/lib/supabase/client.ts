@@ -8,4 +8,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const createSupabaseClient = () =>
-  createBrowserClient(supabaseUrl, supabaseAnonKey);
+  createBrowserClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  });
