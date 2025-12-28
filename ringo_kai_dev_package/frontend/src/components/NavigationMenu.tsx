@@ -271,7 +271,7 @@ export function NavigationMenu() {
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-white border-2 border-gray-200 shadow-xl hover:shadow-2xl hover:border-ringo-rose transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-ringo-rose/50"
+        className="flex h-12 w-12 items-center justify-center rounded-full bg-white border-2 border-gray-200 shadow-xl hover:shadow-2xl hover:border-ringo-rose transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-ringo-rose/50"
         aria-label={isOpen ? "メニューを閉じる" : "メニューを開く"}
         aria-expanded={isOpen}
         aria-controls="navigation-menu"
