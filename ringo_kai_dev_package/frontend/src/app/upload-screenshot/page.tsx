@@ -218,11 +218,18 @@ export default function UploadScreenshotPage() {
       formData.append("purchase_id", String(purchase.purchaseId));
       formData.append("file", file);
 
-      const response = await authorizedFetch("/api/purchase/upload", user.id, {
+      const response = await fetch("/api/purchase/upload", {
         method: "POST",
+        headers: {
+          "X-User-Id": user.id,
+        },
         body: formData,
       });
-      const data = await response.json();
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        const message = data?.detail ?? data?.message ?? "アップロードに失敗しました。";
+        throw new Error(message);
+      }
       setUploadedUrl(data.screenshot_url);
       setSuccess("アップロードが完了しました！最後に「提出する」ボタンを押してください。");
     } catch (err) {
