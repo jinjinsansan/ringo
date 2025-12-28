@@ -69,7 +69,7 @@ MOCK_WISHLIST_URL = os.environ.get(
     "https://www.amazon.jp/hz/wishlist/ls/33U0W5W9VAU29?ref_=wl_share",
 )
 MOCK_WISHLIST_TITLE = os.environ.get("MOCK_WISHLIST_TITLE", "テスト用：欲しいものリスト")
-MOCK_WISHLIST_PRICE = int(os.environ.get("MOCK_WISHLIST_PRICE", "3500"))
+MOCK_WISHLIST_PRICE = int(os.environ.get("MOCK_WISHLIST_PRICE", "3590"))
 MOCK_TARGET_USER_ID = os.environ.get("MOCK_TARGET_USER_ID", "00000000-0000-0000-0000-000000000001")
 
 WISHLIST_ALLOWED_HOSTS = {
@@ -1192,14 +1192,23 @@ def normalize_wishlist_url(raw_url: str) -> str:
 
 
 def extract_price_snapshot(html: str) -> int | None:
-    match = PRICE_PATTERN.search(html)
-    if not match:
+    candidates: list[int] = []
+    for match in PRICE_PATTERN.finditer(html):
+        digits = match.group(1).replace(",", "")
+        try:
+            candidates.append(int(digits))
+        except ValueError:
+            continue
+
+    if not candidates:
         return None
-    digits = match.group(1).replace(",", "")
-    try:
-        return int(digits)
-    except ValueError:
-        return None
+
+    # Prefer values in the expected range so we don't accidentally pick shipping/other UI values.
+    in_range = [value for value in candidates if 3000 <= value <= 4000]
+    if in_range:
+        return in_range[0]
+
+    return candidates[0]
 
 
 def extract_title(html: str) -> str | None:
@@ -1802,15 +1811,16 @@ async def register_wishlist(payload: WishlistRegisterRequest, user_id: str = Dep
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "欲しいものリストは既に登録済みです。")
 
     normalized_url = normalize_wishlist_url(payload.url)
-    
+
+    metadata: dict[str, str | int | None] = {"title": None, "price": None}
     try:
         metadata = await fetch_wishlist_snapshot(normalized_url)
-        price = metadata.get("price")
-        title = metadata.get("title")
     except Exception:
         # Fallback if scraping fails (e.g. anti-bot blocking)
-        price = None
-        title = None
+        metadata = {"title": None, "price": None}
+
+    price = metadata.get("price")
+    title = metadata.get("title")
 
     if price is None:
         # Use default valid price if detection fails to allow registration
@@ -1843,7 +1853,7 @@ async def register_wishlist(payload: WishlistRegisterRequest, user_id: str = Dep
     return {
         "status": "ready_to_draw",
         "price": price,
-        "title": metadata.get("title"),
+        "title": title,
         "wishlist_url": normalized_url,
     }
 
