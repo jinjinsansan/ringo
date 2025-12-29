@@ -446,7 +446,13 @@ async def save_screenshot(file: UploadFile, user_id: str, purchase_id: int) -> s
         },
     )
     public_url = supabase.storage.from_(SCREENSHOT_BUCKET).get_public_url(object_path)
-    return public_url.get("publicUrl") if isinstance(public_url, dict) else public_url
+    url = public_url.get("publicUrl") if isinstance(public_url, dict) else public_url
+    
+    # Clean up URL - remove trailing query parameters that may cause issues
+    if isinstance(url, str):
+        url = url.rstrip("?.")
+    
+    return url
 
 
 def generate_referral_code() -> str:
@@ -1573,6 +1579,9 @@ def run_screenshot_verification(
     item_name: str,
     price: int,
 ) -> tuple[str, str, dict[str, Any] | None, dict[str, Any] | None]:
+    # Clean up URL - remove trailing query parameters that may cause issues with OpenAI
+    screenshot_url = screenshot_url.rstrip("?.")
+    
     metadata: dict[str, Any] = {
         "model": "gpt-4o-mini",
         "evaluated_at": utc_now().isoformat(),
