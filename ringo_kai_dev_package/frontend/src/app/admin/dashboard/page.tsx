@@ -5,6 +5,25 @@ import { useCallback, useEffect, useState } from "react";
 import { getBackendBaseUrl } from "@/lib/backend";
 import { persistAdminToken, readAdminToken } from "@/lib/adminToken";
 
+type AdminAppleUser = {
+  id?: string;
+  email?: string;
+  status?: string;
+  referral_code?: string;
+};
+
+type AdminAppleRow = {
+  id: number;
+  apple_type: string;
+  status: string;
+  draw_time?: string;
+  reveal_time?: string;
+  is_revealed?: boolean;
+  purchase_available?: number;
+  purchase_obligation?: number;
+  user?: AdminAppleUser;
+};
+
 type DashboardMetrics = {
   user_counts: {
     total: number;
@@ -18,6 +37,7 @@ type DashboardMetrics = {
     captured_at?: string;
     probabilities?: Record<string, number>;
   } | null;
+  recent_apples?: AdminAppleRow[];
 };
 
 type SystemMetricEntry = {
@@ -38,6 +58,14 @@ type SystemMetricEntry = {
 };
 
 const backendBase = getBackendBaseUrl();
+
+const appleLabels: Record<string, string> = {
+  bronze: "ブロンズ",
+  silver: "シルバー",
+  gold: "ゴールド",
+  red: "赤りんご",
+  poison: "毒りんご",
+};
 
 export default function AdminDashboardPage() {
   const [adminToken, setAdminToken] = useState("");
@@ -94,6 +122,8 @@ export default function AdminDashboardPage() {
   const statusBreakdown = metrics?.user_counts.status_breakdown ?? {};
   const appleBreakdown = metrics?.apple_counts ?? {};
   const purchaseBreakdown = metrics?.purchase_counts ?? {};
+  const probabilityEntries = Object.entries(metrics?.latest_snapshot?.probabilities ?? {});
+  const recentApples = metrics?.recent_apples ?? [];
 
   return (
     <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-4 py-10 text-ringo-ink">
@@ -151,6 +181,20 @@ export default function AdminDashboardPage() {
         </div>
       </section>
 
+      {probabilityEntries.length > 0 && (
+        <section className="rounded-3xl border border-ringo-purple/20 bg-white/80 p-6 shadow-ringo-card">
+          <h2 className="text-lg font-semibold text-ringo-red">現在のRTP確率</h2>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {probabilityEntries.map(([apple, value]) => (
+              <div key={apple} className="rounded-2xl border border-ringo-purple/10 bg-ringo-bg/70 p-4 text-center">
+                <p className="text-xs uppercase tracking-wide text-ringo-ink/60">{appleLabels[apple] ?? apple}</p>
+                <p className="text-2xl font-bold text-ringo-ink">{(value * 100).toFixed(2)}%</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       <section className="grid gap-6 md:grid-cols-2">
         <div className="rounded-3xl border border-ringo-purple/20 bg-white/80 p-6 shadow-ringo-card">
           <h2 className="text-lg font-semibold text-ringo-red">ユーザーステータス内訳</h2>
@@ -190,19 +234,6 @@ export default function AdminDashboardPage() {
           ))}
           {!Object.keys(appleBreakdown).length && <p className="text-sm text-ringo-ink/60">データなし</p>}
         </div>
-        {metrics?.latest_snapshot?.probabilities && (
-          <div className="mt-6 rounded-2xl bg-ringo-slate-light/40 p-4 text-sm">
-            <p className="font-semibold text-ringo-red">最新確率（動的RTP反映）</p>
-            <ul className="mt-2 space-y-1">
-              {Object.entries(metrics.latest_snapshot.probabilities).map(([apple, value]) => (
-                <li key={apple} className="flex justify-between text-ringo-ink/70">
-                  <span>{apple}</span>
-                  <span>{(value * 100).toFixed(2)}%</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
       </section>
 
       <section className="rounded-3xl border border-ringo-purple/20 bg-white/80 p-6 shadow-ringo-card">
@@ -240,6 +271,53 @@ export default function AdminDashboardPage() {
           </div>
         ) : (
           <p className="mt-4 text-sm text-ringo-ink/60">まだメトリクスが保存されていません。</p>
+        )}
+      </section>
+
+      <section className="rounded-3xl border border-ringo-purple/20 bg-white/80 p-6 shadow-ringo-card">
+        <h2 className="text-lg font-semibold text-ringo-red">最新のりんごトラッカー</h2>
+        {recentApples.length ? (
+          <div className="mt-4 overflow-x-auto">
+            <table className="min-w-full text-left text-xs text-ringo-ink/70">
+              <thead>
+                <tr className="border-b border-ringo-purple/20 text-ringo-ink/90">
+                  <th className="px-3 py-2">りんご</th>
+                  <th className="px-3 py-2">ユーザー</th>
+                  <th className="px-3 py-2">進行状況</th>
+                  <th className="px-3 py-2">購入権/義務</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentApples.map((apple) => (
+                  <tr key={apple.id} className="border-b border-ringo-purple/10">
+                    <td className="px-3 py-2 font-semibold text-ringo-ink">
+                      <div>{appleLabels[apple.apple_type] ?? apple.apple_type}</div>
+                      <div className="text-[10px] uppercase text-ringo-ink/50">{apple.apple_type}</div>
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="font-medium">{apple.user?.email ?? "-"}</div>
+                      <div className="text-[11px] text-ringo-ink/60">{apple.user?.status ?? "-"}</div>
+                    </td>
+                    <td className="px-3 py-2">
+                      <div>{apple.status}</div>
+                      <div className="text-[11px] text-ringo-ink/60">
+                        抽選: {apple.draw_time ? new Date(apple.draw_time).toLocaleString() : "-"}
+                      </div>
+                      <div className="text-[11px] text-ringo-ink/60">
+                        公開: {apple.reveal_time ? new Date(apple.reveal_time).toLocaleString() : "-"}
+                      </div>
+                    </td>
+                    <td className="px-3 py-2">
+                      <div>購入権: {apple.purchase_available ?? 0}</div>
+                      <div>購入義務: {apple.purchase_obligation ?? 0}</div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-ringo-ink/60">表示できるりんご履歴がありません。</p>
         )}
       </section>
     </main>

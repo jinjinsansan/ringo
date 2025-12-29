@@ -362,11 +362,11 @@ def get_next_referral_threshold(referral_count: int) -> int | None:
 
 
 APPLE_REWARDS = {
-    "bronze": {"purchase_obligation": 1, "purchase_available": 1},
-    "silver": {"purchase_obligation": 1, "purchase_available": 2},
-    "gold": {"purchase_obligation": 1, "purchase_available": 3},
-    "red": {"purchase_obligation": 1, "purchase_available": 10},
-    "poison": {"purchase_obligation": 1, "purchase_available": 0},
+    "bronze": {"purchase_obligation": 0, "purchase_available": 1},
+    "silver": {"purchase_obligation": 0, "purchase_available": 2},
+    "gold": {"purchase_obligation": 0, "purchase_available": 3},
+    "red": {"purchase_obligation": 0, "purchase_available": 10},
+    "poison": {"purchase_obligation": 0, "purchase_available": 0},
 }
 
 
@@ -622,7 +622,7 @@ def fetch_dashboard_snapshot(user_id: str) -> tuple[dict[str, object], dict[str,
     while True:
         response = (
             supabase.table("apples")
-            .select("apple_type")
+            .select("apple_type,status,is_revealed")
             .eq("user_id", user_id)
             .order("id")
             .range(start, start + page_size - 1)
@@ -630,6 +630,10 @@ def fetch_dashboard_snapshot(user_id: str) -> tuple[dict[str, object], dict[str,
         )
         rows = response.data or []
         for row in rows:
+            status = row.get("status")
+            is_revealed = bool(row.get("is_revealed"))
+            if not is_revealed and (status is None or status == "pending"):
+                continue
             apple_type = row.get("apple_type")
             if apple_type in counts:
                 counts[apple_type] += 1
@@ -1003,6 +1007,52 @@ def fetch_user_emails(user_ids: set[str]) -> dict[str, str]:
     return {row["id"]: row.get("email", "") for row in response.data or []}
 
 
+def fetch_user_profiles(user_ids: set[str]) -> dict[str, dict[str, object]]:
+    if not user_ids:
+        return {}
+    response = (
+        supabase.table("users")
+        .select("id,email,status,referral_code")
+        .in_("id", list(user_ids))
+        .execute()
+    )
+    profiles: dict[str, dict[str, object]] = {}
+    for row in response.data or []:
+        user_id = row.get("id")
+        if not user_id:
+            continue
+        profiles[user_id] = {
+            "id": user_id,
+            "email": row.get("email"),
+            "status": row.get("status"),
+            "referral_code": row.get("referral_code"),
+        }
+    return profiles
+
+
+def fetch_recent_apples_with_users(limit: int = 40) -> list[dict[str, object]]:
+    response = (
+        supabase.table("apples")
+        .select(
+            "id,user_id,apple_type,status,draw_time,reveal_time,is_revealed,purchase_available,purchase_obligation,purchase_id"
+        )
+        .order("draw_time", desc=True)
+        .limit(limit)
+        .execute()
+    )
+    rows = response.data or []
+    user_ids = {row.get("user_id") for row in rows if row.get("user_id")}
+    profiles = fetch_user_profiles(user_ids)
+
+    enriched: list[dict[str, object]] = []
+    for row in rows:
+        user_id = row.get("user_id")
+        payload = dict(row)
+        payload["user"] = profiles.get(user_id, {"id": user_id})
+        enriched.append(payload)
+    return enriched
+
+
 def count_field_values(table: str, field: str, order_field: str = "id", page_size: int = 1000) -> dict[str, int]:
     counts: dict[str, int] = {}
     start = 0
@@ -1128,6 +1178,7 @@ def get_dashboard_metrics() -> dict[str, object]:
 
     rtp_value = get_cached_rtp()
     latest_snapshot = get_latest_rtp_snapshot()
+    recent_apples = fetch_recent_apples_with_users(limit=40)
 
     return {
         "user_counts": {
@@ -1139,6 +1190,7 @@ def get_dashboard_metrics() -> dict[str, object]:
         "apple_counts": apple_counts,
         "rtp": rtp_value,
         "latest_snapshot": latest_snapshot,
+        "recent_apples": recent_apples,
     }
 
 
@@ -1740,7 +1792,6 @@ async def draw_apple(payload: DrawRequest, user_id: str = Depends(get_user_id)):
 
     updated_user = {
         "apple_draw_rights": draw_rights - 1,
-        "purchase_obligation": (data.get("purchase_obligation") or 0) + reward["purchase_obligation"],
         "purchase_available": (data.get("purchase_available") or 0) + reward["purchase_available"],
         "updated_at": draw_time.isoformat(),
     }
@@ -1841,10 +1892,8 @@ async def consume_ticket(apple_id: int, user_id: str = Depends(get_user_id)):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
 
     current_user_available = user_resp.data.get("purchase_available") or 0
-    current_obligation = user_resp.data.get("purchase_obligation") or 0
     user_updates: dict[str, object] = {
         "purchase_available": max(current_user_available - 1, 0),
-        "purchase_obligation": max(current_obligation - 1, 0),
         "updated_at": now.isoformat(),
     }
 
@@ -1863,7 +1912,7 @@ async def consume_ticket(apple_id: int, user_id: str = Depends(get_user_id)):
 async def start_purchase(user_id: str = Depends(get_user_id)):
     profile = (
         supabase.table("users")
-        .select("status, email")
+        .select("status, email, purchase_obligation")
         .eq("id", user_id)
         .single()
         .execute()
@@ -1872,6 +1921,27 @@ async def start_purchase(user_id: str = Depends(get_user_id)):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
     if profile.data.get("status") not in {"tutorial_completed", "ready_to_purchase"}:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "このステップにはまだ進めません")
+
+    current_obligation = int(profile.data.get("purchase_obligation") or 0)
+
+    existing_purchase = (
+        supabase.table("purchases")
+        .select("id, target_user_id, target_item_name, target_item_price, target_wishlist_url, status")
+        .eq("purchaser_id", user_id)
+        .in_("status", ["pending", "submitted"])
+        .order("created_at", desc=True)
+        .limit(1)
+        .execute()
+    )
+    if existing_purchase.data:
+        purchase = existing_purchase.data[0]
+        return {
+            "purchase_id": purchase["id"],
+            "alias": build_anonymous_alias(purchase.get("target_user_id")),
+            "item_name": purchase.get("target_item_name") or "Amazon 欲しいもの",
+            "price": int(purchase.get("target_item_price") or 0),
+            "wishlist_url": purchase.get("target_wishlist_url") or "",
+        }
 
     items = fetch_available_wishlist_items(user_id, limit=20)
     if not items:
@@ -1885,7 +1955,12 @@ async def start_purchase(user_id: str = Depends(get_user_id)):
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "現在割り当て可能な欲しいものリストがありません。少し待ってから再試行してください。")
 
         purchase = create_mock_purchase(user_id)
-        supabase.table("users").update({"status": "ready_to_purchase", "updated_at": utc_now().isoformat()}).eq("id", user_id).execute()
+        new_obligation = current_obligation + 1
+        supabase.table("users").update({
+            "status": "ready_to_purchase",
+            "purchase_obligation": new_obligation,
+            "updated_at": utc_now().isoformat(),
+        }).eq("id", user_id).execute()
         return {
             "purchase_id": purchase["id"],
             "alias": build_anonymous_alias(purchase.get("target_user_id")),
@@ -1936,7 +2011,12 @@ async def start_purchase(user_id: str = Depends(get_user_id)):
     if not selected_item or not purchase:
         raise HTTPException(status.HTTP_409_CONFLICT, "他のユーザーが同じリストを取得したため、再試行してください。")
 
-    supabase.table("users").update({"status": "ready_to_purchase", "updated_at": utc_now().isoformat()}).eq("id", user_id).execute()
+    new_obligation = current_obligation + 1
+    supabase.table("users").update({
+        "status": "ready_to_purchase",
+        "purchase_obligation": new_obligation,
+        "updated_at": utc_now().isoformat(),
+    }).eq("id", user_id).execute()
 
     return {
         "purchase_id": purchase["id"],
@@ -2523,7 +2603,6 @@ async def admin_grant_red_apple(user_id: str, _: None = Depends(require_admin)):
         raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "りんごレコードの作成に失敗しました")
 
     user_update: dict[str, object] = {
-        "purchase_obligation": (user_data.get("purchase_obligation") or 0) + reward["purchase_obligation"],
         "purchase_available": (user_data.get("purchase_available") or 0) + reward["purchase_available"],
         "updated_at": now.isoformat(),
     }
