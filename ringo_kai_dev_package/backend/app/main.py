@@ -2462,20 +2462,30 @@ async def admin_dashboard(_: None = Depends(require_admin)):
 @api.get("/api/dashboard", response_model=DashboardResponse, tags=["user"])
 async def dashboard_snapshot(user_id: str = Depends(get_user_id)):
     profile, apples = fetch_dashboard_snapshot(user_id)
+    pending_resp = (
+        supabase.table("purchases")
+        .select("status, verification_status")
+        .eq("purchaser_id", user_id)
+        .in_("status", ["pending", "submitted", "review_required"])
+        .limit(25)
+        .execute()
+    )
+    pending_rows = pending_resp.data or []
+    purchase_pending = any(
+        (row.get("status") in {"pending", "review_required"})
+        or (
+            row.get("status") == "submitted"
+            and (row.get("verification_status") or "").lower() != "approved"
+        )
+        for row in pending_rows
+    )
+
     stats = {
         "referral_count": profile.get("referral_count", 0),
         "purchase_obligation": profile.get("purchase_obligation", 0),
         "purchase_available": profile.get("purchase_available", 0),
         "silver_gold_completed_count": profile.get("silver_gold_completed_count", 0),
-        "purchase_pending": bool(
-            supabase.table("purchases")
-            .select("id")
-            .eq("purchaser_id", user_id)
-            .in_("status", ["pending", "submitted"])
-            .limit(1)
-            .execute()
-            .data
-        ),
+        "purchase_pending": purchase_pending,
     }
     return {
         "user": {
