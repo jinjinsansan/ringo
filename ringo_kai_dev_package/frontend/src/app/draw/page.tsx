@@ -240,14 +240,15 @@ export default function DrawPage() {
       >
         <div className="space-y-8">
           {/* Main Draw Area */}
-          <section className="bg-white/80 rounded-[2.5rem] p-8 shadow-ringo-card border border-white text-center relative overflow-hidden">
+          <section className="bg-white/80 backdrop-blur-md rounded-[2.5rem] p-8 shadow-ringo-card border-2 border-white text-center relative overflow-hidden">
              {/* Decor */}
              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-ringo-pink to-ringo-red"></div>
              
              {currentApple ? (
                <div className="py-4">
-                 <h2 className="text-xl font-bold text-ringo-rose mb-6">
-                   あなたのりんごが育っています...🌱
+                 <h2 className="text-xl font-bold text-ringo-rose mb-6 flex items-center justify-center gap-2">
+                   <span>🌱</span>
+                   <span>あなたのりんごが育っています</span>
                  </h2>
                  <div className="mx-auto mb-8">
                    <AppleReveal
@@ -260,15 +261,15 @@ export default function DrawPage() {
                  </div>
                  
                  {appleResult && (
-                   <div className="bg-ringo-bg/50 rounded-xl p-4 mt-6">
+                   <div className="bg-ringo-bg/50 rounded-xl p-4 mt-6 border border-ringo-pink-soft">
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-sm text-gray-500">状態</span>
-                        <span className="font-bold">{appleResult.status}</span>
+                        <span className="font-bold text-ringo-ink">{appleResult.status}</span>
                       </div>
                       <button
                         type="button"
                         onClick={() => fetchResult(String(appleResult.id))}
-                        className="btn-secondary py-2 text-sm w-full"
+                        className="btn-secondary py-2 text-sm w-full bg-white text-ringo-rose border-ringo-rose hover:bg-ringo-bg"
                       >
                         {isResultLoading ? "更新中..." : "状態を更新する"}
                       </button>
@@ -277,30 +278,33 @@ export default function DrawPage() {
                </div>
              ) : (
                <div className="py-10">
-                 <div className="text-6xl mb-6 animate-bounce">🍎</div>
-                 <h2 className="text-2xl font-bold text-ringo-ink mb-2">りんごを引く準備完了！</h2>
-                 <p className="text-gray-500 mb-8 text-sm">
-                   ボタンを押すと抽選が始まります。<br/>
-                   結果は24時間後にわかります。
+                 <div className="text-7xl mb-6 animate-bounce drop-shadow-md">🍎</div>
+                 <h2 className="text-3xl font-bold text-ringo-ink mb-3">運命のりんごを引く</h2>
+                 <p className="text-gray-500 mb-8 text-sm leading-relaxed">
+                   1日1回、不思議なりんごを育てよう。<br/>
+                   どんな色が実るかは、あなたの運とコミュニティ次第。
                  </p>
                  <button 
                    type="button" 
                    onClick={handleDraw} 
-                   className="btn-primary w-full shadow-lg text-lg py-4" 
+                   className="btn-primary w-full shadow-xl text-lg py-5 hover:scale-105 active:scale-95 transition-transform" 
                    disabled={isLoading}
                  >
-                   {isLoading ? "抽選中..." : "運命のりんごを引く！"}
+                   {isLoading ? "準備中..." : "今すぐりんごを育てる！"}
                  </button>
-                 {error && <p className="mt-4 text-ringo-red text-sm bg-ringo-red/10 p-2 rounded">{error}</p>}
+                 {error && <p className="mt-4 text-ringo-red text-sm bg-ringo-red/10 p-3 rounded-lg font-bold">{error}</p>}
                </div>
              )}
           </section>
 
           {/* Probabilities */}
-          <section className="bg-white/60 rounded-2xl p-6 border border-ringo-pink-soft/30">
+          <section className="bg-white/60 backdrop-blur-sm rounded-3xl p-6 border border-white shadow-sm">
             <h3 className="text-sm font-bold text-ringo-ink mb-4 flex items-center justify-between">
-              <span>📊 現在の確率</span>
-              <span className="text-xs font-normal text-gray-400">リアルタイム変動中</span>
+              <span className="flex items-center gap-2">
+                <span>📊</span>
+                <span>現在の確率テーブル</span>
+              </span>
+              <span className="text-[10px] font-normal text-white bg-ringo-rose/80 px-2 py-1 rounded-full">変動あり</span>
             </h3>
             
             <div className="space-y-3">
@@ -313,12 +317,12 @@ export default function DrawPage() {
                   return (
                     <div key={key} className="space-y-1">
                       <div className="flex justify-between text-xs text-gray-600">
-                        <span>{label}</span>
+                        <span className="font-medium">{label}</span>
                         <span className="font-bold">{percent.toFixed(1)}%</span>
                       </div>
-                      <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-2.5 w-full bg-white rounded-full overflow-hidden shadow-inner">
                         <div 
-                          className={`h-full ${color}`} 
+                          className={`h-full ${color} transition-all duration-1000 ease-out`} 
                           style={{ width: `${percent}%` }}
                         ></div>
                       </div>
@@ -329,75 +333,87 @@ export default function DrawPage() {
           </section>
 
           {/* Friends CTA */}
-          <section className="bg-gradient-to-r from-ringo-rose to-ringo-pink rounded-2xl p-6 shadow-md text-ringo-ink">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-bold text-lg text-white/90">お友達を招待する</h3>
-                <p className="text-xs text-white/80">
-                  今回のりんごには影響しませんが、次回の抽選確率がぐっと上がります。
-                </p>
+          <section className="bg-gradient-to-br from-ringo-rose to-ringo-pink rounded-3xl p-1 shadow-lg text-ringo-ink relative overflow-hidden">
+            <div className="bg-white/90 backdrop-blur-md rounded-[1.4rem] p-6 h-full">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="font-bold text-lg text-ringo-rose">お友達招待キャンペーン</h3>
+                  <p className="text-xs text-gray-500 mt-1">
+                    招待数に応じて次回の確率がアップ！<br/>みんなで確率を育てよう。
+                  </p>
+                </div>
+                <div className="text-4xl filter drop-shadow-md">💌</div>
               </div>
-              <div className="text-3xl">👯‍♀️</div>
-            </div>
-            <div className="mt-4 rounded-2xl bg-white/85 p-4 text-left">
-              {referralLink ? (
-                <>
-                  <p className="text-xs font-semibold text-ringo-rose">紹介リンク</p>
-                  <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
-                    <code className="flex-1 truncate rounded-xl border border-ringo-pink-soft bg-white px-3 py-2 text-sm text-ringo-ink">
-                      {referralLink}
-                    </code>
-                    <button
-                      type="button"
-                      onClick={handleCopyReferral}
-                      className="btn-secondary bg-ringo-rose text-white"
-                      disabled={isCopying}
-                    >
-                      {isCopying ? "コピー中..." : "コピー"}
-                    </button>
-                  </div>
-                  {referralNotice && (
-                    <p className="mt-2 text-xs text-gray-600">{referralNotice}</p>
-                  )}
-                </>
-              ) : (
-                <p className="text-sm text-gray-600">
-                  {referralError ?? "紹介リンクを読み込み中です..."}
-                </p>
-              )}
-              <p className="mt-2 text-[11px] text-gray-500">
-                ※ 次のりんごを引く瞬間に紹介人数が確率へ反映されます。
-              </p>
-              <Link href="/friends" className="mt-3 inline-flex items-center text-sm font-bold text-ringo-rose">
-                詳細を見る →
-              </Link>
+              
+              <div className="mt-4 p-4 bg-ringo-bg/50 rounded-xl border border-ringo-pink-soft">
+                {referralLink ? (
+                  <>
+                    <p className="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">あなたの招待リンク</p>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                      <code className="flex-1 truncate rounded-xl border-2 border-ringo-pink-soft bg-white px-4 py-3 text-sm text-ringo-ink font-mono shadow-sm">
+                        {referralLink}
+                      </code>
+                      <button
+                        type="button"
+                        onClick={handleCopyReferral}
+                        className="btn-primary py-3 px-6 text-sm whitespace-nowrap shadow-md"
+                        disabled={isCopying}
+                      >
+                        {isCopying ? "コピー中" : "コピー"}
+                      </button>
+                    </div>
+                    {referralNotice && (
+                      <div className="mt-3 flex items-center gap-2 text-xs font-bold text-ringo-green bg-white p-2 rounded-lg border border-ringo-green/30">
+                        <span>✅</span>
+                        {referralNotice}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-sm text-gray-500 animate-pulse">
+                    {referralError ?? "招待リンクを準備中..."}
+                  </p>
+                )}
+                
+                <div className="mt-4 pt-4 border-t border-ringo-pink-soft/50 flex justify-between items-center">
+                   <p className="text-[10px] text-gray-400">
+                     ※ 確率反映は次回の抽選時となります
+                   </p>
+                   <Link href="/friends" className="text-xs font-bold text-ringo-rose hover:underline flex items-center gap-1">
+                     詳しく見る <span>→</span>
+                   </Link>
+                </div>
+              </div>
             </div>
           </section>
 
-          {/* Tech Info Toggle */}
-          <div className="text-center pt-4">
-            <button 
-              onClick={() => setShowTechInfo(!showTechInfo)}
-              className="text-xs text-gray-300 underline"
-            >
-              {showTechInfo ? "詳細情報を隠す" : "詳細情報を表示"}
-            </button>
-            
-            {showTechInfo && probabilityInfo && (
-              <div className="mt-4 text-left text-xs text-gray-400 bg-gray-50 p-4 rounded-xl space-y-1">
-                 <p>RTP: {probabilityInfo.meta.rtp.toFixed(3)}</p>
-                 <p>Predicted RTP: {probabilityInfo.meta.predicted_rtp.toFixed(3)}</p>
-                 <p>User Growth: {(probabilityInfo.meta.growth_rate * 100).toFixed(1)}%</p>
-                 <p>Silver/Gold Completed: {probabilityInfo.meta.silver_gold_completed_count}</p>
-                 <div className="mt-2 border-t pt-2">
-                   <p className="font-bold">変動理由:</p>
-                   <ul className="list-disc pl-4">
-                     {probabilityInfo.reasons.map((r, i) => <li key={i}>{r}</li>)}
-                   </ul>
+          {/* Probability Status (Friendly Version) */}
+          {probabilityInfo && (
+            <div className="mt-8 text-center">
+               <div className="inline-block bg-white/40 backdrop-blur-sm px-6 py-4 rounded-2xl border border-white/50 text-left w-full max-w-md mx-auto">
+                 <p className="text-xs font-bold text-gray-400 mb-3 text-center uppercase tracking-widest">現在の確率ステータス</p>
+                 <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+                   <div className="bg-white/60 p-3 rounded-xl text-center">
+                     <p className="text-[10px] text-gray-500 mb-1">ユーザー成長率</p>
+                     <p className="font-bold text-ringo-ink text-lg">{(probabilityInfo.meta.growth_rate * 100).toFixed(0)}%</p>
+                   </div>
+                   <div className="bg-white/60 p-3 rounded-xl text-center">
+                     <p className="text-[10px] text-gray-500 mb-1">現在の招待数</p>
+                     <p className="font-bold text-ringo-ink text-lg">{probabilityInfo.meta.referral_count}人</p>
+                   </div>
                  </div>
-              </div>
-            )}
-          </div>
+                 
+                 {probabilityInfo.reasons.length > 0 && (
+                   <div className="bg-ringo-rose/5 p-3 rounded-xl border border-ringo-rose/10">
+                     <p className="text-[10px] font-bold text-ringo-rose mb-1">📢 変動理由</p>
+                     <ul className="list-disc pl-4 text-xs text-gray-600 space-y-1">
+                       {probabilityInfo.reasons.map((r, i) => <li key={i}>{r}</li>)}
+                     </ul>
+                   </div>
+                 )}
+               </div>
+            </div>
+          )}
         </div>
       </FlowLayout>
     </UserFlowGuard>

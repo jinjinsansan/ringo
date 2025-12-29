@@ -103,29 +103,32 @@ export function AppleReveal({ appleId, appleType, drawTime, revealTime, status }
   const copy = appleCopy[appleType];
 
   return (
-    <div className="space-y-6 rounded-3xl border border-ringo-purple/20 bg-white/85 p-6 shadow-ringo-card">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <p className="text-sm font-semibold text-ringo-red">
-            {showActualMeta ? "確定したりんご" : "りんごの正体を解析中"}
+    <div className="space-y-6 rounded-[2rem] border border-white bg-white/60 backdrop-blur-md p-6 shadow-sm">
+      <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+        <div className="flex-1 text-left">
+          <p className="text-xs font-bold uppercase tracking-wider text-ringo-rose mb-1">
+            {showActualMeta ? "🎉 育成完了！" : "🔍 解析中..."}
           </p>
-          <h2 className="text-2xl font-bold text-ringo-ink">
+          <h2 className="text-2xl font-bold text-ringo-ink leading-tight">
             {showActualMeta ? copy.title : "？？？"}
           </h2>
-          <p className="text-sm text-ringo-ink/70">
-            {showActualMeta ? copy.reward : "24時間の間に5段階でヒントが増えていきます"}
+          <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+            {showActualMeta ? copy.reward : "24時間かけてゆっくりと正体が明らかになります。"}
           </p>
         </div>
-        <Countdown target={revealTime} />
+        <div className="w-full md:w-48 shrink-0">
+          <Countdown target={revealTime} />
+        </div>
       </div>
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-white/40 to-ringo-bg/80">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-ringo-purple/10" aria-hidden />
+      
+      <div className="relative overflow-hidden rounded-3xl bg-white shadow-inner ring-4 ring-white/50">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-ringo-bg/20 pointer-events-none" />
         <Image
           src={displayImage}
           alt="apple reveal teaser"
           width={600}
           height={840}
-          className="w-full"
+          className="w-full object-cover"
           priority
           style={
             !showActualMeta && visual
@@ -134,21 +137,33 @@ export function AppleReveal({ appleId, appleType, drawTime, revealTime, status }
           }
         />
         {!showActualMeta && visual && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-white/10 via-white/5 to-ringo-bg/40 text-center">
-            <p className="text-base font-bold text-ringo-ink drop-shadow-sm">{visual.title}</p>
-            <p className="mt-1 w-52 text-xs text-gray-600">{visual.description}</p>
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/30 backdrop-blur-[2px] text-center p-4">
+            <div className="bg-white/90 backdrop-blur-md px-6 py-4 rounded-2xl shadow-lg border border-white">
+               <p className="text-sm font-bold text-ringo-ink">{visual.title}</p>
+               <p className="mt-1 text-[10px] text-gray-500 font-medium">{visual.description}</p>
+            </div>
           </div>
         )}
       </div>
-      <div className="space-y-4">
-        <div className="h-3 w-full rounded-full bg-ringo-purple/20">
-          <div className="h-full rounded-full bg-gradient-to-r from-ringo-pink to-ringo-red transition-all" style={{ width: `${Math.min(progress, 100)}%` }} />
+      
+      <div className="space-y-2">
+        <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+           <span>Growth Progress</span>
+           <span>{Math.min(progress, 100).toFixed(0)}%</span>
+        </div>
+        <div className="h-4 w-full rounded-full bg-white shadow-inner p-1">
+          <div 
+             className="h-full rounded-full bg-gradient-to-r from-ringo-pink to-ringo-red transition-all duration-1000 ease-out shadow-sm" 
+             style={{ width: `${Math.min(progress, 100)}%` }} 
+          />
         </div>
         {showActualMeta ? (
-          <p className="text-sm font-semibold text-ringo-gold">結果が公開されました！カードをタップして詳細を確認しましょう。</p>
+          <p className="text-xs text-center font-bold text-ringo-gold animate-pulse mt-2">
+            結果が公開されました！画像をタップして確認しましょう。
+          </p>
         ) : (
-          <p className="text-sm text-ringo-ink/80">
-            ドキドキ開封中… {Math.min(progress, 99).toFixed(0)}% / 100%
+          <p className="text-[10px] text-center text-gray-400">
+            100%になると正体が判明します
           </p>
         )}
       </div>

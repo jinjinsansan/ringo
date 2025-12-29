@@ -35,17 +35,17 @@ export function Countdown({ target }: Props) {
 
   return (
     <div className="w-full">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ringo-rose">残り時間</p>
-      <div className="mt-3 grid grid-cols-3 gap-2">
+      <p className="text-[10px] font-bold uppercase tracking-widest text-ringo-rose/80 mb-2">残り時間</p>
+      <div className="grid grid-cols-3 gap-3">
         {segments.map((segment) => (
           <div
             key={segment.label}
-            className="rounded-2xl border border-white/60 bg-white/80 px-2 py-2 text-center shadow-sm shadow-ringo-card"
+            className="flex flex-col items-center justify-center rounded-2xl border border-white bg-white/60 backdrop-blur-sm py-3 shadow-sm ring-1 ring-white/40"
           >
-            <div className="font-mono text-3xl font-extrabold tracking-widest text-ringo-ink">
+            <div className="font-numeric text-2xl font-bold tracking-wider text-ringo-ink">
               {segment.value}
             </div>
-            <div className="text-[11px] font-semibold text-gray-400">{segment.label}</div>
+            <div className="text-[9px] font-bold text-gray-400 mt-1">{segment.label}</div>
           </div>
         ))}
       </div>
