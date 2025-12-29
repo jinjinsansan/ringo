@@ -79,7 +79,9 @@ export default function AdminVerificationsPage() {
       setAdminToken(saved);
     }
     setStoredTokenChecked(true);
-    setBackendBase(getBackendBaseUrl());
+    const url = getBackendBaseUrl();
+    console.log("[AdminVerifications] Backend URL:", url, "ENV:", process.env.NEXT_PUBLIC_BACKEND_URL);
+    setBackendBase(url);
   }, []);
 
   const canFetch = useMemo(() => Boolean(adminToken && backendBase), [adminToken, backendBase]);
@@ -89,7 +91,9 @@ export default function AdminVerificationsPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${backendBase}/api/admin/verifications`, {
+      const url = `${backendBase}/api/admin/verifications`;
+      console.log("[AdminVerifications] Fetching:", url);
+      const res = await fetch(url, {
         headers: {
           "X-Admin-Token": adminToken,
         },
