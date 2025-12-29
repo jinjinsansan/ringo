@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getBackendBaseUrl } from "@/lib/backend";
@@ -62,6 +61,24 @@ const statusColors: Record<string, string> = {
 
 const formatDate = (value?: string) => (value ? new Date(value).toLocaleString("ja-JP") : "-");
 const formatPrice = (value?: number | null) => (typeof value === "number" ? `¥${value.toLocaleString()}` : "-");
+
+const formatVerificationResult = (result?: string): string => {
+  if (!result) return "AI からのコメントはまだありません。";
+  
+  // Try to parse JSON if it looks like JSON
+  if (result.trim().startsWith("{") || result.trim().startsWith("[")) {
+    try {
+      const parsed = JSON.parse(result);
+      if (parsed.reason) return parsed.reason;
+      if (parsed.message) return parsed.message;
+      if (parsed.decision) return `判定: ${parsed.decision}${parsed.reason ? ` - ${parsed.reason}` : ""}`;
+    } catch {
+      // If parsing fails, return as-is
+    }
+  }
+  
+  return result;
+};
 
 export default function AdminVerificationsPage() {
   const [adminToken, setAdminToken] = useState<string>("");
@@ -255,13 +272,11 @@ export default function AdminVerificationsPage() {
                       <h3 className="text-xs font-semibold text-gray-500">スクリーンショット / OCR</h3>
                       {row.screenshot_url ? (
                         <div className="mt-2 overflow-hidden rounded-xl border border-white">
-                          <Image
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
                             src={row.screenshot_url}
                             alt={`スクリーンショット ${row.id}`}
-                            width={640}
-                            height={400}
                             className="h-48 w-full object-cover"
-                            sizes="(max-width: 1024px) 100vw, 33vw"
                           />
                         </div>
                       ) : (
@@ -284,7 +299,7 @@ export default function AdminVerificationsPage() {
 
                     <section className="rounded-2xl border border-ringo-purple/10 bg-ringo-slate-light/50 p-4 text-sm">
                       <h3 className="text-xs font-semibold text-gray-500">AI 判定メモ</h3>
-                      <p className="mt-2 text-sm text-ringo-ink/80">{row.verification_result ?? "AI からのコメントはまだありません。"}</p>
+                      <p className="mt-2 text-sm text-ringo-ink/80 whitespace-pre-wrap">{formatVerificationResult(row.verification_result)}</p>
                       {row.admin_notes && (
                         <p className="mt-3 rounded-xl bg-white/70 p-3 text-xs text-gray-600">
                           最終メモ: {row.admin_notes}
