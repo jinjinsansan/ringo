@@ -1586,9 +1586,13 @@ def run_screenshot_verification(
 
     prompt = (
         "以下のスクリーンショットがAmazon購入完了画面で、対象商品が"
-        f"{item_name} であり、価格が概ね ¥{price} であるかを判定してください。"
-        "必ず JSON で回答し、形式は {\"decision\": \"APPROVED|REVIEW|REJECT\", \"reason\": \"...\", \"ocr\": {\"item_name\": string, \"price\": number, \"order_id\": string, \"confidence\": number, \"matched_name\": boolean, \"matched_price\": boolean}} とします。"
-        "余計な文章は含めないでください。"
+        f"{item_name} であり、価格が概ね ¥{price} であるかを判定してください。\n\n"
+        "必ず JSON 形式で日本語で回答してください。形式: "
+        "{\"decision\": \"APPROVED|REVIEW|REJECT\", \"reason\": \"日本語の理由\", \"ocr\": {\"item_name\": string, \"price\": number, \"order_id\": string, \"confidence\": number, \"matched_name\": boolean, \"matched_price\": boolean}}\n\n"
+        "- decision: APPROVED（承認）、REVIEW（要確認）、REJECT（却下）のいずれか\n"
+        "- reason: 判定理由を日本語で簡潔に記載\n"
+        "- ocr: スクリーンショットから読み取った情報\n\n"
+        "余計な文章や説明は含めず、JSON のみを返してください。"
     )
 
     try:
@@ -1598,7 +1602,7 @@ def run_screenshot_verification(
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a strict validator for Amazon purchase receipts. Respond only with the JSON schema provided.",
+                    "content": "あなたはAmazon購入レシートの厳格な検証者です。指定されたJSON形式でのみ、日本語で応答してください。",
                 },
                 {
                     "role": "user",
