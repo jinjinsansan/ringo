@@ -64,11 +64,11 @@ const generateTeasers = (appleId: string, actual: AppleType): AppleType[] => {
 };
 
 const stageVisuals = [
-  { title: "白黒のシルエット", description: "影だけが浮かび上がっています", filter: "grayscale(1) blur(26px)", opacity: 0.75 },
-  { title: "ぼんやりとした輪郭", description: "かすかな色が混じってきました", filter: "grayscale(0.9) blur(18px)", opacity: 0.82 },
-  { title: "全貌がぼけて見える", description: "カード全体の形が見えてきました", filter: "grayscale(0.6) blur(12px)", opacity: 0.9 },
-  { title: "色が戻りつつある", description: "でもまだ確定ではありません", filter: "grayscale(0.3) blur(7px)", opacity: 0.95 },
-  { title: "未確定カード", description: "このカードはヒントかもしれません…", filter: "blur(4px)", opacity: 1 },
+  { title: "種まき完了", description: "土の中で静かに眠っています...", filter: "grayscale(1) blur(26px)", opacity: 0.75 },
+  { title: "発芽しました", description: "小さな芽が顔を出しました", filter: "grayscale(0.9) blur(18px)", opacity: 0.82 },
+  { title: "すくすく成長中", description: "太陽の光を浴びて育っています", filter: "grayscale(0.6) blur(12px)", opacity: 0.9 },
+  { title: "色づき始め", description: "うっすらと色が浮かんでいました", filter: "grayscale(0.3) blur(7px)", opacity: 0.95 },
+  { title: "収穫直前！", description: "まもなく運命の瞬間です...", filter: "blur(4px)", opacity: 1 },
 ];
 
 type Props = {
