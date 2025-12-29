@@ -53,8 +53,6 @@ type VerificationRow = {
   wishlist_assignment?: WishlistAssignment;
 };
 
-const backendBase = getBackendBaseUrl();
-
 const statusColors: Record<string, string> = {
   approved: "bg-ringo-green/20 text-ringo-green",
   rejected: "bg-ringo-red/20 text-ringo-red",
@@ -73,6 +71,7 @@ export default function AdminVerificationsPage() {
   const [decisionMessage, setDecisionMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [decisionLoadingId, setDecisionLoadingId] = useState<number | null>(null);
+  const [backendBase, setBackendBase] = useState<string>("");
 
   useEffect(() => {
     const saved = readAdminToken();
@@ -80,9 +79,10 @@ export default function AdminVerificationsPage() {
       setAdminToken(saved);
     }
     setStoredTokenChecked(true);
+    setBackendBase(getBackendBaseUrl());
   }, []);
 
-  const canFetch = useMemo(() => Boolean(adminToken && backendBase), [adminToken]);
+  const canFetch = useMemo(() => Boolean(adminToken && backendBase), [adminToken, backendBase]);
 
   const fetchVerifications = useCallback(async () => {
     if (!canFetch) return;
@@ -104,7 +104,7 @@ export default function AdminVerificationsPage() {
     } finally {
       setLoading(false);
     }
-  }, [adminToken, canFetch]);
+  }, [adminToken, backendBase, canFetch]);
 
   useEffect(() => {
     if (canFetch && storedTokenChecked) {
