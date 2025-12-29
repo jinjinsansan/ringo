@@ -71,7 +71,7 @@ const formatVerificationResult = (result?: string): string => {
       const parsed = JSON.parse(result);
       if (parsed.reason) return parsed.reason;
       if (parsed.message) return parsed.message;
-      if (parsed.decision) return `判定: ${parsed.decision}${parsed.reason ? ` - ${parsed.reason}` : ""}`;
+      if (parsed.decision) return `判定: ${parsed.decision}`;
     } catch {
       // If parsing fails, return as-is
     }
