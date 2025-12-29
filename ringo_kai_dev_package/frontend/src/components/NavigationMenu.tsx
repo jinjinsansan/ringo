@@ -49,7 +49,7 @@ const flowSteps: Array<{
   { label: "スクショ提出", description: "購入完了画面を送信", href: "/upload-screenshot", requiredStatus: "ready_to_purchase" },
   { label: "確認待ち", description: "承認されるまで待機", href: "/verification-pending", requiredStatus: "verifying" },
   { label: "リスト登録", description: "あなたの欲しい物リスト", href: "/register-wishlist", requiredStatus: "first_purchase_completed" },
-  { label: "りんご抽選", description: "24時間後に結果", href: "/draw", requiredStatus: "ready_to_draw" },
+  { label: "りんご抽選", description: "10分後に結果", href: "/draw", requiredStatus: "ready_to_draw" },
 ];
 
 const getDefaultNextAction = (status: UserStatus): NextAction => {
@@ -68,7 +68,7 @@ const getDefaultNextAction = (status: UserStatus): NextAction => {
     case "ready_to_draw":
     case "active":
     default:
-      return { title: "りんごを引く", description: "抽選して24時間後に結果発表", href: "/draw", icon: "🍎" };
+      return { title: "りんごを引く", description: "抽選して10分後に結果発表", href: "/draw", icon: "🍎" };
   }
 };
 

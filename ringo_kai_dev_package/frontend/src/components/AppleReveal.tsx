@@ -24,7 +24,7 @@ const appleCopy: Record<AppleType, { title: string; reward: string }> = {
   poison: { title: "☠️ 毒りんご", reward: "購入義務1 / 購入免除0" },
 };
 
-const TOTAL_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+const TOTAL_DURATION = 10 * 60 * 1000; // 10 minutes
 const STAGE_COUNT = 5; // teaser stages before final reveal
 const TEASER_POOL: AppleType[] = ["poison", "bronze", "silver", "gold", "red"];
 
@@ -113,7 +113,7 @@ export function AppleReveal({ appleId, appleType, drawTime, revealTime, status }
             {showActualMeta ? copy.title : "？？？"}
           </h2>
           <p className="text-xs text-gray-500 mt-2 leading-relaxed">
-            {showActualMeta ? copy.reward : "24時間かけてゆっくりと正体が明らかになります。"}
+            {showActualMeta ? copy.reward : "10分かけてゆっくりと正体が明らかになります。"}
           </p>
         </div>
         <div className="w-full md:w-48 shrink-0">

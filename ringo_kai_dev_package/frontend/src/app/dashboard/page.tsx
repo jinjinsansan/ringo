@@ -124,7 +124,7 @@ export default function DashboardPage() {
     // 4. Default: Draw Apple
     return {
       label: "りんごを引こう！",
-      desc: "24時間のドキドキを楽しもう",
+      desc: "10分のドキドキを楽しもう",
       button: "抽選ページへ",
       href: "/draw",
       color: "from-ringo-rose to-ringo-pink",

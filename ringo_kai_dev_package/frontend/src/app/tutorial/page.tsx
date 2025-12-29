@@ -83,7 +83,7 @@ export default function TutorialPage() {
                 <div>
                   <h3 className="font-bold text-ringo-ink">3. りんごを引く</h3>
                   <p className="text-xs text-gray-500">
-                    承認されると抽選権をGET。24時間後に結果がわかるドキドキのカードオープン♪
+                    承認されると抽選権をGET。10分後に結果がわかるドキドキのカードオープン♪
                   </p>
                 </div>
               </div>

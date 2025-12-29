@@ -27,7 +27,7 @@ const initialPromptByStatus: Record<string, string> = {
   ready_to_purchase: "割り当てられたリストの商品の注文をお願いね。忘れずにスクショも撮ってね。",
   verifying: "スクリーンショットを確認しています。承認されたら欲しいものリストを登録できますよ。",
   first_purchase_completed: "あなたのAmazon欲しいものリストを登録して、抽選の準備をしちゃいましょう。",
-  ready_to_draw: "りんご抽選ページへ進んで、ワクワクの24時間を楽しんでね！",
+  ready_to_draw: "りんご抽選ページへ進んで、ワクワクの10分を楽しんでね！",
   active: "今はマイページでチケットの状況を確認したり、友達紹介に挑戦してみてね。",
 };
 

@@ -1768,7 +1768,7 @@ async def draw_apple(payload: DrawRequest, user_id: str = Depends(get_user_id)):
     apple_type = random.choices(apples, weights=weights, k=1)[0]
     reward = APPLE_REWARDS[apple_type]
     draw_time = utc_now()
-    reveal_time = draw_time + timedelta(hours=24)
+    reveal_time = draw_time + timedelta(minutes=10)
 
     purchase_query = (
         supabase.table("purchases")
@@ -1883,7 +1883,7 @@ async def consume_ticket(apple_id: int, user_id: str = Depends(get_user_id)):
     now = utc_now()
     reveal_time = parse_timestamp(apple_row.get("reveal_time"))
     if now < reveal_time:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "24時間の公開が完了するまでお待ちください")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "10分の公開が完了するまでお待ちください")
 
     new_available = apple_row["purchase_available"] - 1
     apple_updates: dict[str, object] = {"purchase_available": new_available, "updated_at": now.isoformat()}

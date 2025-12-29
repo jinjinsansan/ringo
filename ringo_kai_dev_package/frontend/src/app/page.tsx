@@ -99,7 +99,7 @@ export default function Home() {
                    <h4 className="text-xl font-bold font-logo mb-3 text-ringo-red">りんごを引く</h4>
                    <p className="text-gray-600 leading-relaxed">
                      承認されたら、りんごを引いてあなたのリストも誰かに届くかも？
-                     <br/><span className="text-xs text-gray-400 mt-2 block">（24時間のドキドキ体験）</span>
+                     <br/><span className="text-xs text-gray-400 mt-2 block">（10分のドキドキ体験）</span>
                    </p>
                 </div>
              </div>
