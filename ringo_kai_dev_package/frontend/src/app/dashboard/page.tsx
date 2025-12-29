@@ -19,9 +19,9 @@ type DashboardData = {
   apples: Record<string, number>;
   stats: {
     referral_count?: number;
-    purchase_obligation?: number;
     purchase_available?: number;
     silver_gold_completed_count?: number;
+    purchase_pending?: boolean;
   };
 };
 
@@ -85,14 +85,15 @@ export default function DashboardPage() {
     if (!user) return null;
     
     // 1. Purchase Obligation
-    if ((stats.purchase_obligation ?? 0) > 0) {
+    const pendingPurchase = stats.purchase_pending;
+    if (pendingPurchase) {
       return {
-        label: "購入義務があります",
-        desc: "あと " + stats.purchase_obligation + " 回の購入が必要です",
-        button: "購入ページへ",
+        label: "購入手続き中",
+        desc: "スクショ承認が完了すると抽選できます",
+        button: "購入状況を確認",
         href: "/purchase",
         color: "from-ringo-red to-ringo-rose",
-        icon: "🎁"
+        icon: "📸"
       };
     }
 
@@ -193,8 +194,8 @@ export default function DashboardPage() {
                     <div className="text-4xl mb-2">🎁</div>
                     <h2 className="font-bold text-lg text-ringo-green">購入状況</h2>
                     <div className="text-xs text-gray-500 mt-1 flex justify-between">
-                       <span>義務: {stats.purchase_obligation}</span>
                        <span>免除: {stats.purchase_available}</span>
+                       <span>進行: {stats.purchase_pending ? "進行中" : "なし"}</span>
                     </div>
                  </Link>
               </section>

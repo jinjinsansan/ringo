@@ -2460,6 +2460,15 @@ async def dashboard_snapshot(user_id: str = Depends(get_user_id)):
         "purchase_obligation": profile.get("purchase_obligation", 0),
         "purchase_available": profile.get("purchase_available", 0),
         "silver_gold_completed_count": profile.get("silver_gold_completed_count", 0),
+        "purchase_pending": bool(
+            supabase.table("purchases")
+            .select("id")
+            .eq("purchaser_id", user_id)
+            .in_("status", ["pending", "submitted"])
+            .limit(1)
+            .execute()
+            .data
+        ),
     }
     return {
         "user": {

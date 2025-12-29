@@ -253,8 +253,8 @@ export function NavigationMenu() {
   }, [dashboard?.stats, user, userStatusIndex]);
 
   // Only show admin panel for goldbenchan@gmail.com
-  const isAdminEmail = user?.email?.toLowerCase().trim() === 'goldbenchan@gmail.com';
-  const showAdminEntry = isAdminEmail;
+  const isAdminEmail = user?.email?.toLowerCase().trim() === "goldbenchan@gmail.com";
+  const showAdminEntry = isAdminEmail || hasAdminAccess;
   
   // Debug log
   if (user?.email && typeof window !== 'undefined') {
