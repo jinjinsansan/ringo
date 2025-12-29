@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AppleReveal, AppleType } from "@/components/AppleReveal";
 import { UserFlowGuard } from "@/components/UserFlowGuard";
 import { FlowLayout } from "@/components/FlowLayout";
-import { authorizedFetch } from "@/lib/status";
+import { authorizedFetch, fetchDashboard } from "@/lib/status";
 import { useUser } from "@/lib/user";
 
 type AppleStatus = "pending" | "revealed";
@@ -83,9 +83,12 @@ export default function DrawPage() {
   const [error, setError] = useState<string | null>(null);
   const [appleResult, setAppleResult] = useState<AppleResult | null>(null);
   const [isResultLoading, setResultLoading] = useState(false);
-  const [consumeMessage, setConsumeMessage] = useState<string | null>(null);
   const [probabilityInfo, setProbabilityInfo] = useState<ProbabilityResponse | null>(null);
   const [showTechInfo, setShowTechInfo] = useState(false);
+  const [referralLink, setReferralLink] = useState<string | null>(null);
+  const [referralError, setReferralError] = useState<string | null>(null);
+  const [referralNotice, setReferralNotice] = useState<string | null>(null);
+  const [isCopying, setCopying] = useState(false);
 
   const mapApple = useCallback((payload: AppleApiResponse): AppleRevealResponse => ({
     id: String(payload.id),
@@ -112,7 +115,6 @@ export default function DrawPage() {
     async (appleId: string) => {
       if (!user) return;
       setResultLoading(true);
-      setConsumeMessage(null);
       try {
         const res = await authorizedFetch(`/api/apple/result/${appleId}`, user.id, {
           cache: "no-store",
@@ -130,7 +132,7 @@ export default function DrawPage() {
 
   const fetchCurrentApple = useCallback(async () => {
     if (!user) return;
-    setLoading(true);
+      setLoading(true);
     setError(null);
     try {
       const res = await authorizedFetch("/api/apple/current", user.id, {
@@ -184,26 +186,48 @@ export default function DrawPage() {
     }
   };
 
-  const handleConsume = async () => {
-    if (!user || !appleResult) return;
-    if (appleResult.purchase_available <= 0) {
-      setConsumeMessage("使用できるチケットがありません。");
-      return;
-    }
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    const loadReferral = async () => {
+      try {
+        const data = await fetchDashboard(user.id);
+        if (cancelled) return;
+        const code = data?.user?.referral_code as string | undefined;
+        if (!code) {
+          setReferralLink(null);
+          setReferralError("紹介コードはまだ発行されていません。");
+          return;
+        }
+        const origin = typeof window !== "undefined" ? window.location.origin : "";
+        const link = origin ? `${origin}/register?ref=${code}` : code;
+        setReferralLink(link);
+        setReferralError(null);
+        setReferralNotice(null);
+      } catch (err) {
+        console.warn("referral fetch failed", err);
+        if (!cancelled) {
+          setReferralError("紹介リンクの取得に失敗しました");
+        }
+      }
+    };
+    loadReferral();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  const handleCopyReferral = async () => {
+    if (!referralLink || typeof navigator === "undefined" || !navigator.clipboard) return;
     try {
-      setConsumeMessage(null);
-      const res = await authorizedFetch(`/api/apple/consume/${appleResult.id}`, user.id, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      const data = (await res.json()) as { purchase_available: number };
-      setConsumeMessage("購入免除チケットを1枚使用しました！次回の購入義務が免除されます✨");
-      setAppleResult((prev) => (prev ? { ...prev, purchase_available: data.purchase_available } : prev));
+      setCopying(true);
+      await navigator.clipboard.writeText(referralLink);
+      setReferralNotice("コピーしました！次回抽選の前に共有してください。");
     } catch (err) {
-      console.error(err);
-      setConsumeMessage(err instanceof Error ? err.message : "チケット使用に失敗しました。");
+      console.warn("copy failed", err);
+      setReferralNotice("コピーに失敗しました。手動で選択してください。");
+    } finally {
+      setCopying(false);
     }
   };
 
@@ -227,6 +251,7 @@ export default function DrawPage() {
                  </h2>
                  <div className="mx-auto mb-8">
                    <AppleReveal
+                      appleId={currentApple.id}
                       appleType={currentApple.appleType}
                       drawTime={currentApple.drawTime}
                       revealTime={currentApple.revealTime}
@@ -303,41 +328,51 @@ export default function DrawPage() {
             </div>
           </section>
 
-          {/* Tickets */}
-          {appleResult && (
-            <section className="bg-gradient-to-br from-ringo-gold/20 to-ringo-yellow/10 rounded-2xl p-6 border border-ringo-gold/30 text-center">
-              <h3 className="text-sm font-bold text-ringo-bronze mb-1">🎟 購入免除チケット</h3>
-              <div className="text-4xl font-bold text-ringo-gold drop-shadow-sm my-2">
-                {appleResult.purchase_available} <span className="text-base font-normal text-ringo-ink">枚</span>
-              </div>
-              
-              {appleResult.purchase_available > 0 && (
-                <div className="mt-4">
-                  <button
-                    type="button"
-                    onClick={handleConsume}
-                    className="btn-secondary bg-white text-ringo-bronze border-ringo-bronze text-sm py-2 px-6"
-                  >
-                    チケットを使う
-                  </button>
-                  {consumeMessage && <p className="mt-2 text-xs text-ringo-bronze">{consumeMessage}</p>}
-                </div>
-              )}
-            </section>
-          )}
-
           {/* Friends CTA */}
-          <Link href="/friends" className="block">
-            <div className="bg-gradient-to-r from-ringo-rose to-ringo-pink rounded-2xl p-6 shadow-md transform transition hover:scale-[1.02] active:scale-95 text-ringo-ink">
-              <div className="flex items-center justify-between">
-                 <div>
-                   <h3 className="font-bold text-lg text-ringo-rose">お友達を招待する</h3>
-                   <p className="text-xs text-ringo-ink/80">レアりんごの確率がアップ！</p>
-                 </div>
-                 <div className="text-3xl">👯‍♀️</div>
+          <section className="bg-gradient-to-r from-ringo-rose to-ringo-pink rounded-2xl p-6 shadow-md text-ringo-ink">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-lg text-white/90">お友達を招待する</h3>
+                <p className="text-xs text-white/80">
+                  今回のりんごには影響しませんが、次回の抽選確率がぐっと上がります。
+                </p>
               </div>
+              <div className="text-3xl">👯‍♀️</div>
             </div>
-          </Link>
+            <div className="mt-4 rounded-2xl bg-white/85 p-4 text-left">
+              {referralLink ? (
+                <>
+                  <p className="text-xs font-semibold text-ringo-rose">紹介リンク</p>
+                  <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <code className="flex-1 truncate rounded-xl border border-ringo-pink-soft bg-white px-3 py-2 text-sm text-ringo-ink">
+                      {referralLink}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={handleCopyReferral}
+                      className="btn-secondary bg-ringo-rose text-white"
+                      disabled={isCopying}
+                    >
+                      {isCopying ? "コピー中..." : "コピー"}
+                    </button>
+                  </div>
+                  {referralNotice && (
+                    <p className="mt-2 text-xs text-gray-600">{referralNotice}</p>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-gray-600">
+                  {referralError ?? "紹介リンクを読み込み中です..."}
+                </p>
+              )}
+              <p className="mt-2 text-[11px] text-gray-500">
+                ※ 次のりんごを引く瞬間に紹介人数が確率へ反映されます。
+              </p>
+              <Link href="/friends" className="mt-3 inline-flex items-center text-sm font-bold text-ringo-rose">
+                詳細を見る →
+              </Link>
+            </div>
+          </section>
 
           {/* Tech Info Toggle */}
           <div className="text-center pt-4">
