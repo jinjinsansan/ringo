@@ -84,10 +84,18 @@ export default function AdminVerificationsPage() {
     setBackendBase(url);
   }, []);
 
-  const canFetch = useMemo(() => Boolean(adminToken && backendBase), [adminToken, backendBase]);
+  const canFetch = useMemo(() => {
+    const result = Boolean(adminToken && backendBase);
+    console.log("[AdminVerifications] canFetch:", result, "token:", adminToken?.slice(0, 5) + "...", "base:", backendBase);
+    return result;
+  }, [adminToken, backendBase]);
 
   const fetchVerifications = useCallback(async () => {
-    if (!canFetch) return;
+    console.log("[AdminVerifications] fetchVerifications called, canFetch:", canFetch);
+    if (!canFetch) {
+      console.log("[AdminVerifications] Skipping fetch - canFetch is false");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -111,7 +119,9 @@ export default function AdminVerificationsPage() {
   }, [adminToken, backendBase, canFetch]);
 
   useEffect(() => {
+    console.log("[AdminVerifications] useEffect - canFetch:", canFetch, "storedTokenChecked:", storedTokenChecked);
     if (canFetch && storedTokenChecked) {
+      console.log("[AdminVerifications] Calling fetchVerifications");
       fetchVerifications();
     }
   }, [canFetch, fetchVerifications, storedTokenChecked]);
