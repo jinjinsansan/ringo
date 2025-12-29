@@ -2111,8 +2111,15 @@ async def submit_purchase(payload: PurchaseVerifyRequest, user_id: str = Depends
         purchase_resp.data.get("target_item_price", 0) or 0,
     )
 
+    if verification_status == "approved":
+        purchase_status = "approved"
+    elif verification_status == "rejected":
+        purchase_status = "rejected"
+    else:
+        purchase_status = "review_required"
+
     purchase_update = {
-        "status": "submitted",
+        "status": purchase_status,
         "screenshot_url": screenshot_url,
         "admin_notes": payload.note,
         "verification_status": verification_status,
