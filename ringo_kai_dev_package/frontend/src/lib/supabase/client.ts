@@ -1,4 +1,4 @@
-import { createBrowserClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -15,7 +15,8 @@ export const createSupabaseClient = () => {
     return supabaseInstance;
   }
 
-  supabaseInstance = createBrowserClient(supabaseUrl, supabaseAnonKey, {
+  // Use standard Supabase client for reliable localStorage persistence in SPA mode
+  supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
