@@ -2072,7 +2072,7 @@ async def upload_purchase_screenshot(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Purchase not found")
     if purchase.data["purchaser_id"] != user_id:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "別のユーザーの購入です")
-    if purchase.data["status"] not in {"pending", "submitted"}:
+    if purchase.data["status"] not in {"pending", "submitted", "review_required"}:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "この購入は提出済みです")
 
     screenshot_url = await save_screenshot(file, user_id, purchase_id)
