@@ -22,6 +22,7 @@ type DashboardSnapshot = {
     referral_count?: number;
     purchase_obligation?: number;
     purchase_available?: number;
+    purchase_pending?: boolean;
   };
 };
 
@@ -220,15 +221,16 @@ export function NavigationMenu() {
     if (!user) return null;
 
     const stats = dashboard?.stats ?? {};
-    const purchaseObligation = Number(stats.purchase_obligation ?? 0);
     const purchaseAvailable = Number(stats.purchase_available ?? 0);
+    const purchaseObligation = Number(stats.purchase_obligation ?? 0);
+    const purchasePending = Boolean(stats.purchase_pending ?? purchaseObligation > 0);
 
-    if (purchaseObligation > 0) {
+    if (purchasePending) {
       return {
-        title: "購入義務を消化する",
-        description: `あと ${purchaseObligation} 回の購入が必要です`,
+        title: "購入手続き中",
+        description: "スクショ承認が完了すると抽選できます",
         href: "/purchase",
-        icon: "🎁",
+        icon: "📸",
       };
     }
 
