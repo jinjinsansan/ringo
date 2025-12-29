@@ -148,7 +148,7 @@ export function AppleReveal({ appleId, appleType, drawTime, revealTime, status }
       
       <div className="space-y-2">
         <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-           <span>Growth Progress</span>
+           <span>育成状況</span>
            <span>{Math.min(progress, 100).toFixed(0)}%</span>
         </div>
         <div className="h-4 w-full rounded-full bg-white shadow-inner p-1">

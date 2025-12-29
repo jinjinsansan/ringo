@@ -84,7 +84,6 @@ export default function DrawPage() {
   const [appleResult, setAppleResult] = useState<AppleResult | null>(null);
   const [isResultLoading, setResultLoading] = useState(false);
   const [probabilityInfo, setProbabilityInfo] = useState<ProbabilityResponse | null>(null);
-  const [showTechInfo, setShowTechInfo] = useState(false);
   const [referralLink, setReferralLink] = useState<string | null>(null);
   const [referralError, setReferralError] = useState<string | null>(null);
   const [referralNotice, setReferralNotice] = useState<string | null>(null);
