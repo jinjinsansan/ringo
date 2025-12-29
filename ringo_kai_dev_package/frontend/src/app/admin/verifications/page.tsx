@@ -63,21 +63,31 @@ const formatDate = (value?: string) => (value ? new Date(value).toLocaleString("
 const formatPrice = (value?: number | null) => (typeof value === "number" ? `¥${value.toLocaleString()}` : "-");
 
 const formatVerificationResult = (result?: string): string => {
+  console.log("[formatVerificationResult] Input:", result);
   if (!result) return "AI からのコメントはまだありません。";
   
+  // Remove markdown code blocks if present
+  let cleaned = result.trim();
+  if (cleaned.startsWith("```json") || cleaned.startsWith("```")) {
+    cleaned = cleaned.replace(/^```json?\s*/, "").replace(/```\s*$/, "").trim();
+    console.log("[formatVerificationResult] Removed markdown, cleaned:", cleaned);
+  }
+  
   // Try to parse JSON if it looks like JSON
-  if (result.trim().startsWith("{") || result.trim().startsWith("[")) {
+  if (cleaned.startsWith("{") || cleaned.startsWith("[")) {
     try {
-      const parsed = JSON.parse(result);
+      const parsed = JSON.parse(cleaned);
+      console.log("[formatVerificationResult] Parsed:", parsed);
       if (parsed.reason) return parsed.reason;
       if (parsed.message) return parsed.message;
       if (parsed.decision) return `判定: ${parsed.decision}`;
-    } catch {
+    } catch (e) {
+      console.error("[formatVerificationResult] Parse error:", e);
       // If parsing fails, return as-is
     }
   }
   
-  return result;
+  return cleaned;
 };
 
 export default function AdminVerificationsPage() {
